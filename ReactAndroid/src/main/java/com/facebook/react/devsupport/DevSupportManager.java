@@ -402,6 +402,8 @@ public class DevSupportManager implements NativeModuleCallExceptionHandler {
         String packageName = mApplicationContext.getPackageName();
         PackageInfo thisPackage = mApplicationContext.getPackageManager()
             .getPackageInfo(packageName, 0);
+
+        // bundleTempFile和package的时间关系
         if (mJSBundleTempFile.lastModified() > thisPackage.lastUpdateTime) {
           // Base APK has not been updated since we donwloaded JS, but if app is using exopackage
           // it may only be a single dex that has been updated. We check for exopackage dir update

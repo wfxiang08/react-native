@@ -544,6 +544,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 - (void)logMessage:(NSString *)message level:(NSString *)level
 {
+  // 如果开启Log, 则通过调用JS输出日志
+  // 也可以在XCode中输出日志
   if (RCT_DEBUG) {
     [_javaScriptExecutor executeJSCall:@"RCTLog"
                                 method:@"logIfNoNativeHook"
@@ -559,6 +561,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
  */
 - (void)enqueueJSCall:(NSString *)moduleDotMethod args:(NSArray *)args
 {
+  // 参数调用的格式:
+  // 字符串0, 字符串1, ..., 参数数组
+  // moduleDotMethod 注意参数的格式
   NSArray *ids = [moduleDotMethod componentsSeparatedByString:@"."];
 
   [self _invokeAndProcessModule:@"BatchedBridge"
@@ -644,6 +649,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
       return;
     }
 
+    // 如何执行JS呢?
     if (strongSelf.loading) {
       [strongSelf->_pendingCalls addObject:@[module, method, args]];
     } else {
@@ -661,6 +667,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   [[NSNotificationCenter defaultCenter] postNotificationName:RCTEnqueueNotification object:nil userInfo:nil];
 
   RCTJavaScriptCallback processResponse = ^(id json, NSError *error) {
+    // 如果出错，则显示 红盒子（redBox)
     if (error) {
       [self.redBox showError:error];
     }
@@ -668,6 +675,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     if (!self.isValid) {
       return;
     }
+    
+    // JS处理完毕
     [[NSNotificationCenter defaultCenter] postNotificationName:RCTDequeueNotification object:nil userInfo:nil];
     [self handleBuffer:json batchEnded:YES];
   };

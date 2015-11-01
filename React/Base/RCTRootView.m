@@ -72,6 +72,7 @@ NSString *const RCTContentDidAppearNotification = @"RCTContentDidAppearNotificat
 
     _bridge = bridge;
     _moduleName = moduleName;
+    
     _initialProperties = [initialProperties copy];
     _appProperties = [initialProperties copy];
     _loadingViewFadeDelay = 0.25;
@@ -87,6 +88,8 @@ NSString *const RCTContentDidAppearNotification = @"RCTContentDidAppearNotificat
                                              selector:@selector(hideLoadingView)
                                                  name:RCTContentDidAppearNotification
                                                object:self];
+
+    
     if (!_bridge.loading) {
       [self bundleFinishedLoading:_bridge.batchedBridge];
     }
@@ -143,6 +146,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
+// 移除LoadingView
+// 带有动画
+// 不带动画
 - (void)hideLoadingView
 {
   if (_loadingView.superview == self && _contentView.contentHasAppeared) {
@@ -179,7 +185,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     return;
   }
 
+  // JS加载完毕之后，重建ContentView
+  // Cmd + R 之后界面立即刷新
   [_contentView removeFromSuperview];
+  
   _contentView = [[RCTRootContentView alloc] initWithFrame:self.bounds bridge:bridge];
   _contentView.backgroundColor = self.backgroundColor;
   [self insertSubview:_contentView atIndex:0];
@@ -195,6 +204,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     @"initialProps": _appProperties ?: @{},
   };
 
+  // 注意当前为 RCTRootView
+  // 重新加载JS App
+  // AppRegistry.runApplication[moduleName, appParameters]
+  // JS和OC之间如何通信呢?
   [bridge enqueueJSCall:@"AppRegistry.runApplication"
                    args:@[moduleName, appParameters]];
 }
@@ -268,6 +281,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
 - (NSNumber *)allocateRootTag
 {
+  // RootTag从1开始，每次自增加10
   NSNumber *rootTag = objc_getAssociatedObject(self, _cmd) ?: @1;
   objc_setAssociatedObject(self, _cmd, @(rootTag.integerValue + 10), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
   return rootTag;
@@ -275,6 +289,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
 @end
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 @implementation RCTRootContentView
 {
   __weak RCTBridge *_bridge;
@@ -293,6 +308,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   return self;
 }
 
+// 禁止用户调用传统的初始化函数，所有的View都必须带有bridge
 RCT_NOT_IMPLEMENTED(-(instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(-(instancetype)initWithCoder:(nonnull NSCoder *)aDecoder)
 

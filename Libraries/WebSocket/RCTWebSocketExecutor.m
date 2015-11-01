@@ -163,6 +163,8 @@ RCT_EXPORT_MODULE()
 - (void)executeJSCall:(NSString *)name method:(NSString *)method arguments:(NSArray *)arguments callback:(RCTJavaScriptCallback)onComplete
 {
   RCTAssert(onComplete != nil, @"callback was missing for exec JS call");
+  
+  // 正式封装为对JS的调用
   NSDictionary *message = @{
     @"method": @"executeJSCall",
     @"moduleName": name,

@@ -24,11 +24,12 @@
 
 @implementation AppDelegate
 
-- (BOOL)application:(__unused UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
-{
+- (BOOL)application:(__unused UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  // RN 如何和 Native沟通呢?
   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self
                                             launchOptions:launchOptions];
 
+  // 宿主: RCTRootView
   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
                                                    moduleName:@"UIExplorerApp"
                                             initialProperties:nil];
@@ -40,6 +41,7 @@
   [self.window makeKeyAndVisible];
   return YES;
 }
+
 
 - (NSURL *)sourceURLForBridge:(__unused RCTBridge *)bridge
 {
@@ -61,6 +63,7 @@
 
     sourceURL = [NSURL URLWithString:@"http://localhost:8081/Examples/UIExplorer/UIExplorerApp.ios.bundle?platform=ios&dev=true"];
 
+//#define RUNNING_ON_CI 1
     /**
      * OPTION 2
      * Load from pre-bundled file on disk. To re-generate the static bundle, `cd`

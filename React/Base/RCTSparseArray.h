@@ -9,6 +9,7 @@
 
 #import <Foundation/Foundation.h>
 
+// 通过NSMutalbeDictionary来实现数组的接口
 @interface RCTSparseArray : NSObject <NSCopying>
 
 - (instancetype)initWithCapacity:(NSUInteger)capacity NS_DESIGNATED_INITIALIZER;

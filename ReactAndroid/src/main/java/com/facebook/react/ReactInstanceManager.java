@@ -240,6 +240,11 @@ public class ReactInstanceManager {
    * Called from UI thread.
    */
   public void createReactContextInBackground() {
+    // 注意3个变量
+    //     mUseDeveloperSupport
+    //     mJSMainModuleName
+    //     mJSBundleFile
+    // 1. 加载JS(Developer支持)
     if (mUseDeveloperSupport && mJSMainModuleName != null) {
       if (mDevSupportManager.hasUpToDateJSBundleInCache()) {
         // If there is a up-to-date bundle downloaded from server, always use that
@@ -268,6 +273,7 @@ public class ReactInstanceManager {
       return;
     }
 
+    // 2. 直接从本地BundleFile读取数据(如何处理)
     recreateReactContextInBackgroundFromBundleFile();
   }
 
@@ -696,6 +702,9 @@ public class ReactInstanceManager {
           mJSMainModuleName != null || mJSBundleFile != null,
           "Either MainModuleName or JS Bundle File needs to be provided");
 
+
+//      .setBundleAssetName("index.android.bundle")
+//      .setJSMainModuleName("index.android")
       return new ReactInstanceManager(
           Assertions.assertNotNull(
               mApplication,

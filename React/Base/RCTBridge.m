@@ -23,8 +23,11 @@ NSString *const RCTJavaScriptDidLoadNotification = @"RCTJavaScriptDidLoadNotific
 NSString *const RCTJavaScriptDidFailToLoadNotification = @"RCTJavaScriptDidFailToLoadNotification";
 NSString *const RCTDidCreateNativeModules = @"RCTDidCreateNativeModules";
 
+// 提前声明
 @class RCTBatchedBridge;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 @interface RCTBatchedBridge : RCTBridge <RCTInvalidating>
 
 @property (nonatomic, weak) RCTBridge *parentBridge;
@@ -39,7 +42,10 @@ NSString *const RCTDidCreateNativeModules = @"RCTDidCreateNativeModules";
 
 @end
 
+// 类似单例?
 static NSMutableArray *RCTModuleClasses;
+
+// 声明 & 实现
 NSArray *RCTGetModuleClasses(void);
 NSArray *RCTGetModuleClasses(void)
 {
@@ -75,6 +81,11 @@ NSString *RCTBridgeModuleNameForClass(Class cls)
   RCTAssert([cls conformsToProtocol:@protocol(RCTBridgeModule)], @"Bridge module classes must conform to RCTBridgeModule");
 #endif
 
+  // RCTBridgeModule
+  // 要么自带 moduleName
+  // 要么使用ClassName
+  // 如果Name以RK开头，则RK统一替换为: RCT
+  //
   NSString *name = [cls moduleName];
   if (name.length == 0) {
     name = NSStringFromClass(cls);
@@ -215,6 +226,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
                                              object:nil];
 
 #if TARGET_IPHONE_SIMULATOR
+  // 在iOs模拟器上监控: Cmd + R 快捷键
+  // 用于处理: reload
   RCTKeyCommands *commands = [RCTKeyCommands sharedInstance];
 
   // reload in current mode
