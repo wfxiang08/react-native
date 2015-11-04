@@ -13,6 +13,7 @@ typedef void (^RCTSourceLoadBlock)(NSError *error, NSData *source);
 
 @protocol RCTBridgeDelegate <NSObject>
 
+// 获取指定的Bridge的代码的URL
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge;
 
 @optional

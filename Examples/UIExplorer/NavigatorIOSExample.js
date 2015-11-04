@@ -43,7 +43,7 @@ var EmptyPage = React.createClass({
 });
 
 var NavigatorIOSExample = React.createClass({
-
+  // 静态变量
   statics: {
     title: '<NavigatorIOS>',
     description: 'iOS navigation capabilities',
@@ -56,48 +56,58 @@ var NavigatorIOSExample = React.createClass({
     }
     return (
       <ScrollView style={styles.list}>
-        <View style={styles.line}/>
+        <View style={styles.line1}/>
         <View style={styles.group}>
           <View style={styles.row}>
             <Text style={styles.rowNote}>
-              See &lt;UIExplorerApp&gt; for top-level usage.
+              注意转义: See &lt;UIExplorerApp&gt; for top-level usage.
+              自动换行，高度自适应
             </Text>
           </View>
         </View>
+
         <View style={styles.line}/>
         <View style={styles.groupSpace}/>
+
         <View style={styles.line}/>
+
         <View style={styles.group}>
           {this._renderRow(recurseTitle, () => {
+            // 递归将 NavigatorIOSExample 打开
+            // 最上面的 NavigatorIOSExample 的标题和之后打开的标题不一样
             this.props.navigator.push({
               title: NavigatorIOSExample.title,
               component: NavigatorIOSExample,
-              backButtonTitle: 'Custom Back',
+              backButtonTitle: '返回',
               passProps: {topExampleRoute: this.props.topExampleRoute || this.props.route},
             });
           })}
+
           {this._renderRow('Push View Example', () => {
             this.props.navigator.push({
               title: 'Very Long Custom View Example Title',
               component: createExamplePage(null, ViewExample),
             });
           })}
+
           {this._renderRow('Custom Right Button', () => {
             this.props.navigator.push({
               title: NavigatorIOSExample.title,
               component: EmptyPage,
-              rightButtonTitle: 'Cancel',
+              rightButtonTitle: '取消',
               onRightButtonPress: () => this.props.navigator.pop(),
               passProps: {
                 text: 'This page has a right button in the nav bar',
               }
             });
           })}
+
+
           {this._renderRow('Custom Left & Right Icons', () => {
             this.props.navigator.push({
               title: NavigatorIOSExample.title,
               component: EmptyPage,
-              leftButtonTitle: 'Custom Left',
+              leftButtonTitle: '[返回]',
               onLeftButtonPress: () => this.props.navigator.pop(),
               rightButtonIcon: require('image!NavBarButtonPlus'),
               onRightButtonPress: () => {
@@ -118,13 +128,18 @@ var NavigatorIOSExample = React.createClass({
             });
           })}
           {this._renderRow('Pop', () => {
+            // 简单地弹出（不关心参数的变化)
             this.props.navigator.pop();
           })}
           {this._renderRow('Pop to top', () => {
+            // 异步到位弹出到Pop
             this.props.navigator.popToTop();
           })}
           {this._renderRow('Replace here', () => {
             var prevRoute = this.props.route;
+
+            // 如果替换呢?
+            //
             this.props.navigator.replace({
               title: 'New Navigation',
               component: EmptyPage,
@@ -155,6 +170,7 @@ var NavigatorIOSExample = React.createClass({
   },
 
   _renderReplacePrevious: function() {
+    // 返回 null 时, JS不会Render对应的Row或者View
     if (!this.props.topExampleRoute) {
       // this is to avoid replacing the UIExplorerList at the top of the stack
       return null;
@@ -227,6 +243,10 @@ var styles = StyleSheet.create({
   },
   line: {
     backgroundColor: '#bbbbbb',
+    height: 1 / PixelRatio.get(),
+  },
+  line1: {
+    backgroundColor: '#996666',
     height: 1 / PixelRatio.get(),
   },
   row: {

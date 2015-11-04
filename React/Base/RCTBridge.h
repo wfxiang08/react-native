@@ -64,7 +64,13 @@ RCT_EXTERN NSString *RCTBridgeModuleNameForClass(Class bridgeModuleClass);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Async batched bridge used to communicate with the JavaScript application.
+ * 基本上是一个空壳，对外封装一些接口，然后交给: RCTBatchedBridge接口
  */
+//
+//  RCTBridge
+//    每次代码刷新都会重建:
+//        RCTBatchedBridge
+//
 @interface RCTBridge : NSObject <RCTInvalidating>
 
 /**

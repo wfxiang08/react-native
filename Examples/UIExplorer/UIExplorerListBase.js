@@ -25,6 +25,7 @@ var {
   TouchableHighlight,
   View,
 } = React;
+
 var createExamplePage = require('./createExamplePage');
 
 var ds = new ListView.DataSource({
@@ -35,6 +36,7 @@ var ds = new ListView.DataSource({
 class UIExplorerListBase extends React.Component {
   constructor(props: any) {
     super(props);
+
     this.state = {
       dataSource: ds.cloneWithRowsAndSections({
         components: [],
@@ -49,6 +51,7 @@ class UIExplorerListBase extends React.Component {
   }
 
   render() {
+    // 在ListView之前添加额外的东西
     var topView = this.props.renderAdditionalView &&
       this.props.renderAdditionalView(this.renderRow.bind(this), this.renderTextInput.bind(this));
 
@@ -86,6 +89,8 @@ class UIExplorerListBase extends React.Component {
   }
 
   _renderSectionHeader(data: any, section: string) {
+    // 将section大写输出
+    // data 是什么东西呢?
     return (
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionHeaderTitle}>
@@ -114,11 +119,14 @@ class UIExplorerListBase extends React.Component {
   }
 
   search(text: mixed): void {
+
     this.props.search && this.props.search(text);
 
+    // 如果进行筛选呢?
     var regex = new RegExp(text, 'i');
     var filter = (component) => regex.test(component.title);
 
+    // 筛选之后的Filter
     this.setState({
       dataSource: ds.cloneWithRowsAndSections({
         components: this.props.components.filter(filter),
@@ -129,6 +137,7 @@ class UIExplorerListBase extends React.Component {
   }
 
   onPressRow(example: any): void {
+    // 如果有callback, 则Callback
     this.props.onPressRow && this.props.onPressRow(example);
   }
 
@@ -148,34 +157,38 @@ var styles = StyleSheet.create({
   },
   sectionHeader: {
     padding: 5,
+    //height: 50,
   },
   group: {
     backgroundColor: 'white',
   },
   sectionHeaderTitle: {
-    fontWeight: '500',
+    fontWeight: '500', // 'bold'
     fontSize: 11,
   },
   row: {
     backgroundColor: 'white',
-    justifyContent: 'center',
+    justifyContent: 'center', // https://facebook.github.io/react-native/docs/flexbox.html#proptypes
     paddingHorizontal: 15,
     paddingVertical: 8,
   },
+  // 高度居然可以为非整数,  / PixelRatio.get()
   separator: {
-    height: 1 / PixelRatio.get(),
-    backgroundColor: '#bbbbbb',
-    marginLeft: 15,
+    height: 1/2,
+    backgroundColor: '#bb0000',
+    marginLeft: 5,
   },
+
   rowTitleText: {
     fontSize: 17,
     fontWeight: '500',
   },
   rowDetailText: {
     fontSize: 15,
-    color: '#888888',
+    color: '#669966',
     lineHeight: 20,
   },
+
   searchRow: {
     backgroundColor: '#eeeeee',
     paddingTop: 75,

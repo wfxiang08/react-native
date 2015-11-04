@@ -23,7 +23,6 @@ var {
   View,
 } = React;
 
-var base64Icon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAQAAACSR7JhAAADtUlEQVR4Ac3YA2Bj6QLH0XPT1Fzbtm29tW3btm3bfLZtv7e2ObZnms7d8Uw098tuetPzrxv8wiISrtVudrG2JXQZ4VOv+qUfmqCGGl1mqLhoA52oZlb0mrjsnhKpgeUNEs91Z0pd1kvihA3ULGVHiQO2narKSHKkEMulm9VgUyE60s1aWoMQUbpZOWE+kaqs4eLEjdIlZTcFZB0ndc1+lhB1lZrIuk5P2aib1NBpZaL+JaOGIt0ls47SKzLC7CqrlGF6RZ09HGoNy1lYl2aRSWL5GuzqWU1KafRdoRp0iOQEiDzgZPnG6DbldcomadViflnl/cL93tOoVbsOLVM2jylvdWjXolWX1hmfZbGR/wjypDjFLSZIRov09BgYmtUqPQPlQrPapecLgTIy0jMgPKtTeob2zWtrGH3xvjUkPCtNg/tm1rjwrMa+mdUkPd3hWbH0jArPGiU9ufCsNNWFZ40wpwn+62/66R2RUtoso1OB34tnLOcy7YB1fUdc9e0q3yru8PGM773vXsuZ5YIZX+5xmHwHGVvlrGPN6ZSiP1smOsMMde40wKv2VmwPPVXNut4sVpUreZiLBHi0qln/VQeI/LTMYXpsJtFiclUN+5HVZazim+Ky+7sAvxWnvjXrJFneVtLWLyPJu9K3cXLWeOlbMTlrIelbMDlrLenrjEQOtIF+fuI9xRp9ZBFp6+b6WT8RrxEpdK64BuvHgDk+vUy+b5hYk6zfyfs051gRoNO1usU12WWRWL73/MMEy9pMi9qIrR4ZpV16Rrvduxazmy1FSvuFXRkqTnE7m2kdb5U8xGjLw/spRr1uTov4uOgQE+0N/DvFrG/Jt7i/FzwxbA9kDanhf2w+t4V97G8lrT7wc08aA2QNUkuTfW/KimT01wdlfK4yEw030VfT0RtZbzjeMprNq8m8tnSTASrTLti64oBNdpmMQm0eEwvfPwRbUBywG5TzjPCsdwk3IeAXjQblLCoXnDVeoAz6SfJNk5TTzytCNZk/POtTSV40NwOFWzw86wNJRpubpXsn60NJFlHeqlYRbslqZm2jnEZ3qcSKgm0kTli3zZVS7y/iivZTweYXJ26Y+RTbV1zh3hYkgyFGSTKPfRVbRqWWVReaxYeSLarYv1Qqsmh1s95S7G+eEWK0f3jYKTbV6bOwepjfhtafsvUsqrQvrGC8YhmnO9cSCk3yuY984F1vesdHYhWJ5FvASlacshUsajFt2mUM9pqzvKGcyNJW0arTKN1GGGzQlH0tXwLDgQTurS8eIQAAAABJRU5ErkJggg==';
 
 var TabBarExample = React.createClass({
   statics: {
@@ -42,6 +41,7 @@ var TabBarExample = React.createClass({
   },
 
   _renderContent: function(color: string, pageText: string, num?: number) {
+    // num? 参数可有，可无，如果没有，则 {num}返回""
     return (
       <View style={[styles.tabContent, {backgroundColor: color}]}>
         <Text style={styles.tabText}>{pageText}</Text>
@@ -49,46 +49,82 @@ var TabBarExample = React.createClass({
       </View>
     );
   },
-
+  // 4dd363 FF0000
+  // badge={this.state.notifCount > 0 ? this.state.notifCount : undefined}
+  // 模拟春雨的首页
   render: function() {
     return (
       <TabBarIOS
-        tintColor="white"
-        barTintColor="darkslateblue">
+        translucent={true}
+        tintColor="#4dd363"
+        barTintColor="#f9f9f9">
         <TabBarIOS.Item
-          title="Blue Tab"
-          icon={{uri: base64Icon, scale: 3}}
-          selected={this.state.selectedTab === 'blueTab'}
+          title="空中医院"
+          icon={require("image!btn_air_hospital_normal")}
+          selectedIcon={require("image!btn_air_hospital_selected")}
+          selected={this.state.selectedTab === 'airTab'}
           onPress={() => {
+            // 动作之后，更新状态
             this.setState({
-              selectedTab: 'blueTab',
+              selectedTab: 'airTab',
             });
           }}>
-          {this._renderContent('#414A8C', 'Blue Tab')}
+          {this._renderContent('#414A8C', '空中医院')}
         </TabBarIOS.Item>
+
         <TabBarIOS.Item
-          systemIcon="history"
-          badge={this.state.notifCount > 0 ? this.state.notifCount : undefined}
-          selected={this.state.selectedTab === 'redTab'}
+          title="我的服务"
+          icon={require('image!btn_service_normal')}
+          selectedIcon={require('image!btn_service_selected')}
+          selected={this.state.selectedTab === 'serviceTab'}
           onPress={() => {
             this.setState({
-              selectedTab: 'redTab',
+              selectedTab: 'serviceTab',
               notifCount: this.state.notifCount + 1,
             });
           }}>
-          {this._renderContent('#783E33', 'Red Tab', this.state.notifCount)}
+          {this._renderContent('#783E33', '我的服务', this.state.notifCount)}
         </TabBarIOS.Item>
         <TabBarIOS.Item
-          icon={require('./flux.png')}
-          title="More"
-          selected={this.state.selectedTab === 'greenTab'}
+          title="健康助手"
+          icon={require('image!btn_assistant')}
+          selectedIcon={require('image!btn_assistant_selected')}
+          selected={this.state.selectedTab === 'assitantTab'}
           onPress={() => {
             this.setState({
-              selectedTab: 'greenTab',
+              selectedTab: 'assitantTab',
               presses: this.state.presses + 1
             });
           }}>
-          {this._renderContent('#21551C', 'Green Tab', this.state.presses)}
+          {this._renderContent('#21551C', '健康助手', this.state.presses)}
+        </TabBarIOS.Item>
+
+        <TabBarIOS.Item
+          title="新闻"
+          icon={require('image!btn_news_normal')}
+          selectedIcon={require('image!btn_news_selected')}
+          selected={this.state.selectedTab === 'newsTab'}
+          onPress={() => {
+            this.setState({
+              selectedTab: 'newsTab',
+              presses: this.state.presses + 1
+            });
+          }}>
+          {this._renderContent('#FF551C', '新闻', this.state.presses)}
+        </TabBarIOS.Item>
+
+        <TabBarIOS.Item
+          title="个人中心"
+          icon={require('image!btn_mine_normal')}
+          selectedIcon={require('image!btn_mine_selected')}
+          selected={this.state.selectedTab === 'userTab'}
+          onPress={() => {
+            this.setState({
+              selectedTab: 'userTab',
+              presses: this.state.presses + 1
+            });
+          }}>
+          {this._renderContent('#FF551C', '个人中心', this.state.presses)}
         </TabBarIOS.Item>
       </TabBarIOS>
     );

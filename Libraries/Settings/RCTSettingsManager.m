@@ -21,19 +21,18 @@
 }
 
 @synthesize bridge = _bridge;
-
+// 1. 任何Module的标准实现
 RCT_EXPORT_MODULE()
 
-- (instancetype)init
-{
+- (instancetype)init {
+  // 默认的实现
   return [self initWithUserDefaults:[NSUserDefaults standardUserDefaults]];
 }
 
-- (instancetype)initWithUserDefaults:(NSUserDefaults *)defaults
-{
+- (instancetype)initWithUserDefaults:(NSUserDefaults *)defaults {
   if ((self = [super init])) {
     _defaults = defaults;
-
+    // 在userDefaults被修改之后通知。。。
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(userDefaultsDidChange:)
                                                  name:NSUserDefaultsDidChangeNotification
@@ -54,13 +53,13 @@ RCT_EXPORT_MODULE()
     return;
   }
 
-  [_bridge.eventDispatcher
-   sendDeviceEventWithName:@"settingsUpdated"
-   body:RCTJSONClean([_defaults dictionaryRepresentation])];
+  // 如何通过 _bridege来通知: settingsUpdated
+  [_bridge.eventDispatcher sendDeviceEventWithName: @"settingsUpdated"
+                                              body: RCTJSONClean([_defaults dictionaryRepresentation])];
 }
 
-- (NSDictionary *)constantsToExport
-{
+- (NSDictionary *)constantsToExport {
+  // Long Lived的对象，数据不会轻易改变，或者两边能同步改变
   return @{
     @"settings": RCTJSONClean([_defaults dictionaryRepresentation])
   };
@@ -72,6 +71,7 @@ RCT_EXPORT_MODULE()
  */
 RCT_EXPORT_METHOD(setValues:(NSDictionary *)values)
 {
+  // JS主动调用的，因此不进行Notification, 否则就会出现死循环
   _ignoringUpdates = YES;
   [values enumerateKeysAndObjectsUsingBlock:^(NSString *key, id json, BOOL *stop) {
     id plist = [RCTConvert NSPropertyList:json];

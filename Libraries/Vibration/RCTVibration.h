@@ -9,6 +9,10 @@
 
 #import "RCTBridgeModule.h"
 
+// 只是一个Manager之类的对象，
+// Manager负责方法的导出，接口的定制
+// 其他的对象负责在功能上适配
+//
 @interface RCTVibration : NSObject <RCTBridgeModule>
 
 @end

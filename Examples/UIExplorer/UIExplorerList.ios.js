@@ -27,6 +27,7 @@ import type { NavigationContext } from 'NavigationContext';
 
 var UIExplorerListBase = require('./UIExplorerListBase');
 
+// 1. 导入相关的Components
 var COMPONENTS = [
   require('./ActivityIndicatorIOSExample'),
   require('./DatePickerIOSExample'),
@@ -55,6 +56,8 @@ var COMPONENTS = [
   require('./WebViewExample'),
 ];
 
+
+// 2. APIs和Components的区别?
 var APIS = [
   require('./AccessibilityIOSExample'),
   require('./ActionSheetIOSExample'),
@@ -81,7 +84,10 @@ var APIS = [
 
 // Register suitable examples for snapshot tests
 COMPONENTS.concat(APIS).forEach((Example) => {
+  // 注册Component
+  // 正常的Component必须有自己的displayName
   if (Example.displayName) {
+
     var Snapshotter = React.createClass({
       render: function() {
         var Renderable = UIExplorerListBase.makeRenderable(Example);
@@ -92,10 +98,12 @@ COMPONENTS.concat(APIS).forEach((Example) => {
         );
       },
     });
+
     AppRegistry.registerComponent(Example.displayName, () => Snapshotter);
   }
 });
 
+// type的意义
 type Props = {
   navigator: {
     navigationContext: NavigationContext,
@@ -104,6 +112,9 @@ type Props = {
   onExternalExampleRequested: Function,
 };
 
+//
+// Settings是什么概念呢?
+//
 class UIExplorerList extends React.Component {
   props: Props;
 
@@ -140,7 +151,9 @@ class UIExplorerList extends React.Component {
       component: Component,
     });
   }
-
+  // 用法:
+  // this.onPressRow.bind(this)
+  //
   onPressRow(example: any) {
     this._openExample(example);
   }
@@ -152,4 +165,7 @@ var styles = StyleSheet.create({
   },
 });
 
+
+// exports的作用:
+//  var UIExplorerList = require('./UIExplorerList.ios');
 module.exports = UIExplorerList;

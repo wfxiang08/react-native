@@ -84,8 +84,8 @@
 }
 
 - (void)loadSourceForBridge:(RCTBridge *)bridge
-                  withBlock:(RCTSourceLoadBlock)loadCallback
-{
+                  withBlock:(RCTSourceLoadBlock)loadCallback {
+  // 指定了Javascript的Loader的方式
   [RCTJavaScriptLoader loadBundleAtURL:[self sourceURLForBridge:bridge]
                             onComplete:loadCallback];
 }

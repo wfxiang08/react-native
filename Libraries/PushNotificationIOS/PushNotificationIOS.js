@@ -10,8 +10,11 @@
  * @flow
  */
 'use strict';
+// 注意JS如何和iOs交互，如何导出OC的接口呢?
 
+// ECMAScript 6标准的Map实现
 var Map = require('Map');
+
 var RCTDeviceEventEmitter = require('RCTDeviceEventEmitter');
 var RCTPushNotificationManager = require('NativeModules').PushNotificationManager;
 var invariant = require('invariant');
@@ -52,6 +55,7 @@ var NOTIF_REGISTER_EVENT = 'remoteNotificationsRegistered';
  *   ```
  */
 class PushNotificationIOS {
+  // 定义了PushNotificaitonIOS的数据结构
   _data: Object;
   _alert: string | Object;
   _sound: string;
@@ -66,6 +70,7 @@ class PushNotificationIOS {
    *
    */
   static presentLocalNotification(details: Object) {
+    // 调用API
     RCTPushNotificationManager.presentLocalNotification(details);
   }
 
@@ -240,6 +245,7 @@ class PushNotificationIOS {
    * `popInitialNotification` is sufficient
    */
   constructor(nativeNotif: Object) {
+  // 注意如何构造信息
     this._data = {};
 
     // Extract data from Apple's `aps` dict as defined:

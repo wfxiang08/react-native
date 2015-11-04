@@ -118,12 +118,12 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
 
 - (instancetype)initWithObjCMethodName:(NSString *)objCMethodName
                           JSMethodName:(NSString *)JSMethodName
-                           moduleClass:(Class)moduleClass
-{
+                           moduleClass:(Class)moduleClass {
   if ((self = [super init])) {
 
     _moduleClass = moduleClass;
     _objCMethodName = [objCMethodName copy];
+    
     _JSMethodName = JSMethodName.length > 0 ? JSMethodName : ({
       NSString *methodName = objCMethodName;
       NSRange colonRange = [methodName rangeOfString:@":"];
@@ -141,6 +141,7 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
       _functionType = RCTFunctionTypeNormal;
     }
   }
+  
 
   return self;
 }
@@ -165,6 +166,7 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
   NSUInteger numberOfArguments = methodSignature.numberOfArguments;
   NSMutableArray *argumentBlocks = [[NSMutableArray alloc] initWithCapacity:numberOfArguments - 2];
 
+// 定义参数解析的逻辑, 解析完毕之后交给Invocation
 #define RCT_ARG_BLOCK(_logic) \
 [argumentBlocks addObject:^(__unused RCTBridge *bridge, NSUInteger index, id json) { \
   _logic \
@@ -241,6 +243,7 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
         case _C_ID: {
           isNullableType = YES;
           id (*convert)(id, SEL, id) = (typeof(convert))objc_msgSend;
+          // 如果是CID, 则直接转换类型，并 increase ref.
           RCT_ARG_BLOCK(
             id value = convert([RCTConvert class], selector, json);
             CFBridgingRetain(value);
@@ -333,56 +336,56 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
                   " to support this type.", typeName, [self methodName]);
     }
 
-    if (RCT_DEBUG) {
-
-      RCTNullability nullability = argument.nullability;
-      if (!isNullableType) {
-        if (nullability == RCTNullable) {
-          RCTLogArgumentError(weakSelf, i - 2, typeName, "is marked as "
-                              "nullable, but is not a nullable type.");
-        }
-        nullability = RCTNonnullable;
-      }
-
-      /**
-       * Special case - Numbers are not nullable in Android, so we
-       * don't support this for now. In future we may allow it.
-       */
-      if ([typeName isEqualToString:@"NSNumber"]) {
-        BOOL unspecified = (nullability == RCTNullabilityUnspecified);
-        if (!argument.unused && (nullability == RCTNullable || unspecified)) {
-          RCTLogArgumentError(weakSelf, i - 2, typeName,
-            [unspecified ? @"has unspecified nullability" : @"is marked as nullable"
-             stringByAppendingString: @" but React requires that all NSNumber "
-             "arguments are explicitly marked as `nonnull` to ensure "
-             "compatibility with Android."].UTF8String);
-        }
-        nullability = RCTNonnullable;
-      }
-
-      if (nullability == RCTNonnullable) {
-        RCTArgumentBlock oldBlock = argumentBlocks[i - 2];
-        argumentBlocks[i - 2] = ^(RCTBridge *bridge, NSUInteger index, id json) {
-          if (json != nil) {
-            if (!oldBlock(bridge, index, json)) {
-              return NO;
-            }
-            if (isNullableType) {
-              // Check converted value wasn't null either, as method probably
-              // won't gracefully handle a nil vallue for a nonull argument
-              void *value;
-              [invocation getArgument:&value atIndex:index + 2];
-              if (value == NULL) {
-                return NO;
-              }
-            }
-            return YES;
-          }
-          RCTLogArgumentError(weakSelf, index, typeName, "must not be null");
-          return NO;
-        };
-      }
-    }
+//    if (RCT_DEBUG) {
+//
+//      RCTNullability nullability = argument.nullability;
+//      if (!isNullableType) {
+//        if (nullability == RCTNullable) {
+//          RCTLogArgumentError(weakSelf, i - 2, typeName, "is marked as "
+//                              "nullable, but is not a nullable type.");
+//        }
+//        nullability = RCTNonnullable;
+//      }
+//
+//      /**
+//       * Special case - Numbers are not nullable in Android, so we
+//       * don't support this for now. In future we may allow it.
+//       */
+//      if ([typeName isEqualToString:@"NSNumber"]) {
+//        BOOL unspecified = (nullability == RCTNullabilityUnspecified);
+//        if (!argument.unused && (nullability == RCTNullable || unspecified)) {
+//          RCTLogArgumentError(weakSelf, i - 2, typeName,
+//            [unspecified ? @"has unspecified nullability" : @"is marked as nullable"
+//             stringByAppendingString: @" but React requires that all NSNumber "
+//             "arguments are explicitly marked as `nonnull` to ensure "
+//             "compatibility with Android."].UTF8String);
+//        }
+//        nullability = RCTNonnullable;
+//      }
+//
+//      if (nullability == RCTNonnullable) {
+//        RCTArgumentBlock oldBlock = argumentBlocks[i - 2];
+//        argumentBlocks[i - 2] = ^(RCTBridge *bridge, NSUInteger index, id json) {
+//          if (json != nil) {
+//            if (!oldBlock(bridge, index, json)) {
+//              return NO;
+//            }
+//            if (isNullableType) {
+//              // Check converted value wasn't null either, as method probably
+//              // won't gracefully handle a nil vallue for a nonull argument
+//              void *value;
+//              [invocation getArgument:&value atIndex:index + 2];
+//              if (value == NULL) {
+//                return NO;
+//              }
+//            }
+//            return YES;
+//          }
+//          RCTLogArgumentError(weakSelf, index, typeName, "must not be null");
+//          return NO;
+//        };
+//      }
+//    }
   }
 
   _argumentBlocks = [argumentBlocks copy];
@@ -442,6 +445,7 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
   }
 
   // Set arguments
+  // 通过argumentBlock为: _invocation 设置参数
   NSUInteger index = 0;
   for (id json in arguments) {
     RCTArgumentBlock block = _argumentBlocks[index];
@@ -464,6 +468,7 @@ void RCTParseObjCMethodName(NSString **objCMethodName, NSArray **arguments)
     @encode(RCTArgumentBlock)
   );
 
+  // 释放Invocation中的参数的引用(清理工作)
   index = 2;
   for (NSUInteger length = _invocation.methodSignature.numberOfArguments; index < length; index++) {
     if ([_invocation.methodSignature getArgumentTypeAtIndex:index][0] == _C_ID) {

@@ -40,6 +40,7 @@ static NSString * const RCTJSCProfilerEnabledDefaultsKey = @"RCTJSCProfilerEnabl
 #endif
 #endif
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTJavaScriptContext : NSObject <RCTInvalidating>
 
 @property (nonatomic, strong, readonly) JSContext *context;
@@ -49,13 +50,12 @@ static NSString * const RCTJSCProfilerEnabledDefaultsKey = @"RCTJSCProfilerEnabl
 
 @end
 
-@implementation RCTJavaScriptContext
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTJavaScriptContext {
   RCTJavaScriptContext *_self;
 }
 
-- (instancetype)initWithJSContext:(JSContext *)context
-{
+- (instancetype)initWithJSContext:(JSContext *)context {
   if ((self = [super init])) {
     _context = context;
     _self = self;
@@ -65,26 +65,23 @@ static NSString * const RCTJSCProfilerEnabledDefaultsKey = @"RCTJSCProfilerEnabl
 
 RCT_NOT_IMPLEMENTED(-(instancetype)init)
 
-- (JSGlobalContextRef)ctx
-{
+- (JSGlobalContextRef)ctx {
   return _context.JSGlobalContextRef;
 }
 
-- (BOOL)isValid
-{
+- (BOOL)isValid {
   return _context != nil;
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
   if (self.isValid) {
     _context = nil;
     _self = nil;
   }
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
+  // 关闭当前的RunLoop
   CFRunLoopStop([[NSRunLoop currentRunLoop] getCFRunLoop]);
 }
 
@@ -521,10 +518,13 @@ static void RCTInstallJSCProfiler(RCTBridge *bridge, JSContextRef context)
   }), 0, @"js_call", (@{@"module":name, @"method": method, @"args": arguments}))];
 }
 
+//
+// 执行 URL 对应的  script的内容
+// 成功之后再回调: onComplete
+//
 - (void)executeApplicationScript:(NSData *)script
                        sourceURL:(NSURL *)sourceURL
-                      onComplete:(RCTJavaScriptCompleteBlock)onComplete
-{
+                      onComplete:(RCTJavaScriptCompleteBlock)onComplete {
   RCTAssertParam(script);
   RCTAssertParam(sourceURL);
 
@@ -546,7 +546,13 @@ static void RCTInstallJSCProfiler(RCTBridge *bridge, JSContextRef context)
     JSValueRef jsError = NULL;
     JSStringRef execJSString = JSStringCreateWithUTF8CString(nullTerminatedScript.bytes);
     JSStringRef jsURL = JSStringCreateWithCFString((__bridge CFStringRef)sourceURL.absoluteString);
+    
+    // 在指定的Context中执行Javascript
+    // JSString
+    // URL(其中的图片可以使用相对的URL)
+    //
     JSValueRef result = JSEvaluateScript(strongSelf->_context.ctx, execJSString, NULL, jsURL, 0, &jsError);
+    
     JSStringRelease(jsURL);
     JSStringRelease(execJSString);
     RCTPerformanceLoggerEnd(RCTPLScriptExecution);
@@ -584,21 +590,27 @@ static void RCTInstallJSCProfiler(RCTBridge *bridge, JSContextRef context)
   block();
 }
 
+//
+// 添加对象: global.xxxx=
+//
 - (void)injectJSONText:(NSString *)script
    asGlobalObjectNamed:(NSString *)objectName
-              callback:(RCTJavaScriptCompleteBlock)onComplete
-{
+              callback:(RCTJavaScriptCompleteBlock)onComplete {
   if (RCT_DEBUG) {
     RCTAssert(RCTJSONParse(script, NULL) != nil, @"%@ wasn't valid JSON!", script);
   }
 
   __weak RCTContextExecutor *weakSelf = self;
+
   [self executeBlockOnJavaScriptQueue:RCTProfileBlock((^{
+    
     RCTContextExecutor *strongSelf = weakSelf;
     if (!strongSelf || !strongSelf.isValid) {
       return;
     }
     JSStringRef execJSString = JSStringCreateWithCFString((__bridge CFStringRef)script);
+    
+    // 获取JSON, JS可理解的对象
     JSValueRef valueToInject = JSValueMakeFromJSONString(strongSelf->_context.ctx, execJSString);
     JSStringRelease(execJSString);
 
@@ -612,7 +624,8 @@ static void RCTInstallJSCProfiler(RCTBridge *bridge, JSContextRef context)
       }
       return;
     }
-
+    
+    // 在global域名下，添加了Context
     JSObjectRef globalObject = JSContextGetGlobalObject(strongSelf->_context.ctx);
     JSStringRef JSName = JSStringCreateWithCFString((__bridge CFStringRef)objectName);
     JSObjectSetProperty(strongSelf->_context.ctx, globalObject, JSName, valueToInject, kJSPropertyAttributeNone, NULL);
@@ -620,7 +633,11 @@ static void RCTInstallJSCProfiler(RCTBridge *bridge, JSContextRef context)
     if (onComplete) {
       onComplete(nil);
     }
-  }), 0, @"js_call,json_call", (@{@"objectName": objectName}))];
+    
+    // Block结束（正常情况下，后面的js_call等没有作用)
+  }), 0, @"js_call,json_call", (@{@"objectName": objectName}))
+   ];
+  
 }
 
 RCT_EXPORT_METHOD(setContextName:(nonnull NSString *)name)

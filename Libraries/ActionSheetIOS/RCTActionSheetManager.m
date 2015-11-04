@@ -52,20 +52,24 @@ RCT_EXPORT_MODULE()
 RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
                   callback:(RCTResponseSenderBlock)callback)
 {
+  // 1. 什么是AppExtension呢?
   if (RCTRunningInAppExtension()) {
     RCTLogError(@"Unable to show action sheet from app extension");
     return;
   }
 
+  // 2. callback是如何传递的呢？
   if (!_callbacks) {
     _callbacks = [NSMapTable strongToStrongObjectsMapTable];
   }
 
+  // 3. RCTConvert NSString 便于在Debug阶段发现问题
   NSString *title = [RCTConvert NSString:options[@"title"]];
   NSArray *buttons = [RCTConvert NSStringArray:options[@"options"]];
   NSInteger destructiveButtonIndex = options[@"destructiveButtonIndex"] ? [RCTConvert NSInteger:options[@"destructiveButtonIndex"]] : -1;
   NSInteger cancelButtonIndex = options[@"cancelButtonIndex"] ? [RCTConvert NSInteger:options[@"cancelButtonIndex"]] : -1;
 
+  // 获取当前的ViewController
   UIViewController *controller = RCTSharedApplication().delegate.window.rootViewController;
   if (controller == nil) {
     RCTLogError(@"Tried to display action sheet but there is no application window. options: %@", options);
@@ -82,7 +86,7 @@ RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
   CGRect sourceRect = [self sourceRectInView:sourceView anchorViewTag:anchorViewTag];
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
-
+  // 忽略
   if ([UIAlertController class] == nil) {
 
     UIActionSheet *actionSheet = [UIActionSheet new];
@@ -108,6 +112,7 @@ RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
 #endif
 
   {
+    // 构建UIAlertController
     UIAlertController *alertController =
     [UIAlertController alertControllerWithTitle:title
                                         message:nil
@@ -116,12 +121,14 @@ RCT_EXPORT_METHOD(showActionSheetWithOptions:(NSDictionary *)options
     NSInteger index = 0;
     for (NSString *option in buttons) {
       UIAlertActionStyle style = UIAlertActionStyleDefault;
+      // 样式
       if (index == destructiveButtonIndex) {
         style = UIAlertActionStyleDestructive;
       } else if (index == cancelButtonIndex) {
         style = UIAlertActionStyleCancel;
       }
 
+      // 定制Action
       NSInteger localIndex = index;
       [alertController addAction:[UIAlertAction actionWithTitle:option
                                                           style:style
@@ -205,6 +212,7 @@ RCT_EXPORT_METHOD(showShareActionSheetWithOptions:(NSDictionary *)options
 
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
 {
+  // 支持旧版本的代码
   RCTResponseSenderBlock callback = [_callbacks objectForKey:actionSheet];
   if (callback) {
     callback(@[@(buttonIndex)]);

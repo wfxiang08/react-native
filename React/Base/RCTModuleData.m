@@ -14,8 +14,7 @@
 #import "RCTLog.h"
 #import "RCTUtils.h"
 
-@implementation RCTModuleData
-{
+@implementation RCTModuleData {
   NSDictionary *_constants;
   NSArray *_methods;
   NSString *_queueName;
@@ -23,17 +22,26 @@
 
 - (instancetype)initWithExecutor:(id<RCTJavaScriptExecutor>)javaScriptExecutor
                         moduleID:(NSNumber *)moduleID
-                        instance:(id<RCTBridgeModule>)instance
-{
+                        instance:(id<RCTBridgeModule>)instance {
   if ((self = [super init])) {
+    // 通信工具
     _javaScriptExecutor = javaScriptExecutor;
+    
+    // 编号
     _moduleID = moduleID;
+    
+    // 实例
     _instance = instance;
+    
+    // Class&Name
     _moduleClass = [instance class];
     _name = RCTBridgeModuleNameForClass(_moduleClass);
 
     // Must be done at init time to ensure it's called on main thread
     RCTAssertMainThread();
+    // 导出一些常量
+    // 也不一定是常量，就是变化不频繁的都可以导出，然后js/oc两端同时维护一套数据(减小数据通信的开销)
+    //
     if ([_instance respondsToSelector:@selector(constantsToExport)]) {
       _constants = [_instance constantsToExport];
     }
@@ -46,11 +54,10 @@
 
 RCT_NOT_IMPLEMENTED(- (instancetype)init);
 
-- (NSArray *)methods
-{
+- (NSArray *)methods {
   if (!_methods) {
     NSMutableArray *moduleMethods = [NSMutableArray new];
-
+    // 主动控制的Methods Export
     if ([_instance respondsToSelector:@selector(methodsToExport)]) {
       [moduleMethods addObjectsFromArray:[_instance methodsToExport]];
     }
@@ -61,9 +68,15 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
     for (unsigned int i = 0; i < methodCount; i++) {
       Method method = methods[i];
       SEL selector = method_getName(method);
+      // 如果获取导出的方法呢?
+      // SELECTOR Prefix
       if ([NSStringFromSelector(selector) hasPrefix:@"__rct_export__"]) {
         IMP imp = method_getImplementation(method);
+        
+        // 执行Method, 获取OC MethodName和JSMethod Name
         NSArray *entries = ((NSArray *(*)(id, SEL))imp)(_moduleClass, selector);
+        
+        
         id<RCTBridgeMethod> moduleMethod =
         [[RCTModuleMethod alloc] initWithObjCMethodName:entries[1]
                                            JSMethodName:entries[0]
@@ -80,8 +93,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
   return _methods;
 }
 
-- (NSArray *)config
-{
+- (NSArray *)config {
+  // 常数 & Methods
   if (_constants.count == 0 && self.methods.count == 0) {
     return (id)kCFNull; // Nothing to export
   }
@@ -112,15 +125,15 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
   return config;
 }
 
-- (dispatch_queue_t)queue
-{
+- (dispatch_queue_t)queue {
   if (!_queue) {
+    // Module可以又自己的Queue, 也可以创建默认的Queue; 自己的Queue也许只是缓存之前创建的Queue
+    // 每个queue中的事情单独处理
     BOOL implementsMethodQueue = [_instance respondsToSelector:@selector(methodQueue)];
     if (implementsMethodQueue) {
       _queue = _instance.methodQueue;
     }
     if (!_queue) {
-
       // Create new queue (store queueName, as it isn't retained by dispatch_queue)
       _queueName = [NSString stringWithFormat:@"com.facebook.React.%@Queue", _name];
       _queue = dispatch_queue_create(_queueName.UTF8String, DISPATCH_QUEUE_SERIAL);
@@ -142,17 +155,17 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init);
   return _queue;
 }
 
-- (void)dispatchBlock:(dispatch_block_t)block
-{
+- (void)dispatchBlock:(dispatch_block_t)block {
   [self dispatchBlock:block dispatchGroup:NULL];
 }
 
 - (void)dispatchBlock:(dispatch_block_t)block
-        dispatchGroup:(dispatch_group_t)group
-{
+        dispatchGroup:(dispatch_group_t)group {
+
   if (self.queue == RCTJSThread) {
     [_javaScriptExecutor executeBlockOnJavaScriptQueue:block];
   } else if (self.queue) {
+    // 其他的Queue, 则在queue上异步执行block
     if (group != NULL) {
       dispatch_group_async(group, self.queue, block);
     } else {

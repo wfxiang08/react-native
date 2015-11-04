@@ -13,8 +13,7 @@
 #import "RCTUtils.h"
 #import "UIView+React.h"
 
-@implementation RCTText
-{
+@implementation RCTText {
   NSTextStorage *_textStorage;
   NSMutableArray *_reactSubviews;
   CAShapeLayer *_highlightLayer;
@@ -30,7 +29,7 @@
     self.accessibilityTraits |= UIAccessibilityTraitStaticText;
 
     self.opaque = NO;
-    self.contentMode = UIViewContentModeRedraw;
+    self.contentMode = UIViewContentModeRedraw; // 自己绘制内容
   }
   return self;
 }
@@ -75,6 +74,7 @@
 
 - (void)drawRect:(CGRect)rect
 {
+  // 如何在给给定的Rect中绘制指定的Text呢?
   NSLayoutManager *layoutManager = _textStorage.layoutManagers.firstObject;
   NSTextContainer *textContainer = layoutManager.textContainers.firstObject;
   CGRect textFrame = UIEdgeInsetsInsetRect(self.bounds, _contentInset);

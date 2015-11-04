@@ -9,6 +9,10 @@
 
 #import <Foundation/Foundation.h>
 
+//
+// 基本上就是: _modulesByName
+// 其他的都是外壳，以及一些debug模式下的检查
+//
 @interface RCTModuleMap : NSDictionary
 
 - (instancetype)initWithDictionary:(NSDictionary *)modulesByName NS_DESIGNATED_INITIALIZER;

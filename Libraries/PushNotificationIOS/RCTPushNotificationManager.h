@@ -11,6 +11,9 @@
 
 #import "RCTBridgeModule.h"
 
+// 扩展一个新的Module
+// 能注册自己、加载自己
+//
 @interface RCTPushNotificationManager : NSObject <RCTBridgeModule>
 
 + (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings;

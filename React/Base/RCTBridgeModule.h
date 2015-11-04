@@ -48,6 +48,11 @@ typedef void (^RCTPromiseRejectBlock)(NSError *error);
  */
 extern dispatch_queue_t RCTJSThread;
 
+//
+// BridgeModule的接口:
+// moduleName/load
+//
+
 /**
  * Provides the interface needed to register a bridge module.
  */
@@ -118,7 +123,7 @@ RCT_EXTERN void RCTRegisterModule(Class); \
  *                   andB:(NSInteger)b)
  * { ... }
  *
- * and is exposed to JavaScript as `NativeModules.ModuleName.doSomething`.
+ * and is exposed to JavaScript as `NativeModules.ModuleName.doSomething`. 只匹配Selector的第一部分名字
  *
  * ## Promises
  *
@@ -132,7 +137,7 @@ RCT_EXTERN void RCTRegisterModule(Class); \
  *
  * RCT_EXPORT_METHOD(doSomethingAsync:(NSString *)aString
  *                           resolver:(RCTPromiseResolveBlock)resolve
- *                           rejecter:(RCTPromiseRejectBlock)reject
+ *                           rejecter:(RCTPromiseRejectBlock)reject  名字中带有: Async（？), 反正会有回调的内容
  * { ... }
  *
  * Calling `NativeModules.ModuleName.doSomethingAsync(aString)` from

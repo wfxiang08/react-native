@@ -1,9 +1,9 @@
 /**
  * The examples provided by Facebook are for non-commercial testing and
  * evaluation purposes only.
- *
+ * <p/>
  * Facebook reserves all rights not expressly granted.
- *
+ * <p/>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL
@@ -15,7 +15,9 @@
 package com.facebook.react.uiapp;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 
 import com.facebook.react.LifecycleState;
@@ -26,64 +28,70 @@ import com.facebook.react.shell.MainReactPackage;
 
 public class UIExplorerActivity extends Activity implements DefaultHardwareBackBtnHandler {
 
-  private ReactInstanceManager mReactInstanceManager;
+    private ReactInstanceManager mReactInstanceManager;
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-    mReactInstanceManager = ReactInstanceManager.builder()
-        .setApplication(getApplication())
-        .setBundleAssetName("UIExplorerApp.android.bundle")
-        .setJSMainModuleName("Examples/UIExplorer/UIExplorerApp.android")
-        .addPackage(new MainReactPackage())
-        .setUseDeveloperSupport(true)
-        .setInitialLifecycleState(LifecycleState.RESUMED)
-        .build();
+        // 在Debug模式下，开启此段代码
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplication());
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("debug_http_host", "192.168.2.8:8081");
+        editor.commit();
 
-    ((ReactRootView) findViewById(R.id.react_root_view))
-        .startReactApplication(mReactInstanceManager, "UIExplorerApp", null);
-  }
+        mReactInstanceManager = ReactInstanceManager.builder()
+                .setApplication(getApplication())
+                .setBundleAssetName("UIExplorerApp.android.bundle")
+                .setJSMainModuleName("Examples/UIExplorer/UIExplorerApp.android")
+                .addPackage(new MainReactPackage())
+                .setUseDeveloperSupport(true)
+                .setInitialLifecycleState(LifecycleState.RESUMED)
+                .build();
 
-  @Override
-  public boolean onKeyUp(int keyCode, KeyEvent event) {
-    if (keyCode == KeyEvent.KEYCODE_MENU && mReactInstanceManager != null) {
-      mReactInstanceManager.showDevOptionsDialog();
-      return true;
+        ((ReactRootView) findViewById(R.id.react_root_view))
+                .startReactApplication(mReactInstanceManager, "UIExplorerApp", null);
     }
-    return super.onKeyUp(keyCode, event);
-  }
 
-  @Override
-  protected void onPause() {
-    super.onPause();
-
-    if (mReactInstanceManager != null) {
-      mReactInstanceManager.onPause();
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU && mReactInstanceManager != null) {
+            mReactInstanceManager.showDevOptionsDialog();
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
     }
-  }
 
-  @Override
-  protected void onResume() {
-    super.onResume();
+    @Override
+    protected void onPause() {
+        super.onPause();
 
-    if (mReactInstanceManager != null) {
-      mReactInstanceManager.onResume(this, this);
+        if (mReactInstanceManager != null) {
+            mReactInstanceManager.onPause();
+        }
     }
-  }
 
-  @Override
-  public void onBackPressed() {
-    if (mReactInstanceManager != null) {
-      mReactInstanceManager.onBackPressed();
-    } else {
-      super.onBackPressed();
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mReactInstanceManager != null) {
+            mReactInstanceManager.onResume(this, this);
+        }
     }
-  }
 
-  @Override
-  public void invokeDefaultOnBackPressed() {
-    super.onBackPressed();
-  }
+    @Override
+    public void onBackPressed() {
+        if (mReactInstanceManager != null) {
+            mReactInstanceManager.onBackPressed();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public void invokeDefaultOnBackPressed() {
+        super.onBackPressed();
+    }
 }

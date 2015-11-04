@@ -9,6 +9,8 @@
 
 #import <UIKit/UIKit.h>
 
+// 用于展示文字的
+// 只支持7.0+
 @interface RCTText : UIView
 
 @property (nonatomic, assign) UIEdgeInsets contentInset;

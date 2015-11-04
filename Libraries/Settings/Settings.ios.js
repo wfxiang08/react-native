@@ -12,10 +12,14 @@
 'use strict';
 
 var RCTDeviceEventEmitter = require('RCTDeviceEventEmitter');
+
+// 1. 读取Session Manager
 var RCTSettingsManager = require('NativeModules').SettingsManager;
 
 var invariant = require('invariant');
 
+// Settings的订阅者:
+//
 var subscriptions: Array<{keys: Array<string>; callback: ?Function}> = [];
 
 var Settings = {

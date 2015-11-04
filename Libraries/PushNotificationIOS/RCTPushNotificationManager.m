@@ -14,6 +14,7 @@
 #import "RCTEventDispatcher.h"
 #import "RCTUtils.h"
 
+// 可以忽略
 #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
 
 #define UIUserNotificationTypeAlert UIRemoteNotificationTypeAlert
@@ -29,8 +30,9 @@ NSString *const RCTRemoteNotificationsRegistered = @"RemoteNotificationsRegister
 
 @implementation RCTConvert (UILocalNotification)
 
-+ (UILocalNotification *)UILocalNotification:(id)json
-{
+// 代码是否可以以CocoaPod来管理呢?
+// 增加一个这样的接口有什么作用呢?
++ (UILocalNotification *)UILocalNotification:(id)json {
   NSDictionary *details = [self NSDictionary:json];
   UILocalNotification *notification = [UILocalNotification new];
   notification.fireDate = [RCTConvert NSDate:details[@"fireDate"]] ?: [NSDate date];
@@ -40,8 +42,7 @@ NSString *const RCTRemoteNotificationsRegistered = @"RemoteNotificationsRegister
 
 @end
 
-@implementation RCTPushNotificationManager
-{
+@implementation RCTPushNotificationManager {
   NSDictionary *_initialNotification;
 }
 
@@ -49,8 +50,7 @@ RCT_EXPORT_MODULE()
 
 @synthesize bridge = _bridge;
 
-- (instancetype)init
-{
+- (instancetype)init {
   if ((self = [super init])) {
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleRemoteNotificationReceived:)
@@ -82,6 +82,7 @@ RCT_EXPORT_MODULE()
   }
 }
 
+// 获取到deviceToken之后，如何处理呢?
 + (void)application:(__unused UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
   NSMutableString *hexString = [NSMutableString string];
@@ -100,19 +101,20 @@ RCT_EXPORT_MODULE()
 
 + (void)application:(__unused UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)notification
 {
+
   [[NSNotificationCenter defaultCenter] postNotificationName:RCTRemoteNotificationReceived
                                                       object:self
                                                     userInfo:notification];
 }
 
-- (void)handleRemoteNotificationReceived:(NSNotification *)notification
-{
+- (void)handleRemoteNotificationReceived:(NSNotification *)notification {
+  // 将受到的消息交给JS层
   [_bridge.eventDispatcher sendDeviceEventWithName:@"remoteNotificationReceived"
                                               body:notification.userInfo];
 }
 
-- (void)handleRemoteNotificationsRegistered:(NSNotification *)notification
-{
+- (void)handleRemoteNotificationsRegistered:(NSNotification *)notification {
+  // 将deviceToken交给js层
   [_bridge.eventDispatcher sendDeviceEventWithName:@"remoteNotificationsRegistered"
                                               body:notification.userInfo];
 }

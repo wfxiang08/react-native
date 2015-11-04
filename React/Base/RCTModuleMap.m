@@ -14,8 +14,7 @@
 #import "RCTDefines.h"
 #import "RCTLog.h"
 
-@implementation RCTModuleMap
-{
+@implementation RCTModuleMap {
   NSDictionary *_modulesByName;
 }
 
@@ -25,33 +24,36 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithObjects:(const id [])objects
                                             forKeys:(const id<NSCopying> [])keys
                                               count:(NSUInteger)cnt)
 
-- (instancetype)initWithDictionary:(NSDictionary *)modulesByName
-{
+- (instancetype)initWithDictionary:(NSDictionary *)modulesByName {
   if ((self = [super init])) {
     _modulesByName = [modulesByName copy];
   }
   return self;
 }
 
-- (NSUInteger)count
-{
+- (NSUInteger)count {
   return _modulesByName.count;
 }
 
+// 引用外部定义的Func
 //declared in RCTBridge.m
 extern BOOL RCTBridgeModuleClassIsRegistered(Class cls);
 
-- (id)objectForKey:(NSString *)moduleName
-{
+- (id)objectForKey:(NSString *)moduleName {
   id<RCTBridgeModule> module = _modulesByName[moduleName];
+
   if (RCT_DEBUG) {
     if (module) {
       Class moduleClass = [module class];
+      // 如果没有注册.....
       if (!RCTBridgeModuleClassIsRegistered(moduleClass)) {
         RCTLogError(@"Class %@ was not exported. Did you forget to use "
                     "RCT_EXPORT_MODULE()?", moduleClass);
       }
     } else {
+      // 如果没有Module?
+      // moduleName可能错误地当做 ClassName传递进来，尽量避免这种情况
+      //           当然也可以为className
       Class moduleClass = NSClassFromString(moduleName);
       module = _modulesByName[moduleName];
       if (module) {

@@ -18,6 +18,8 @@
 
 var React = require('react-native');
 var UIExplorerList = require('./UIExplorerList.ios');
+
+var TabBarExample = require("./TabBarIOSExample")
 var {
   AppRegistry,
   NavigatorIOS,
@@ -49,7 +51,7 @@ var UIExplorerApp = React.createClass({
         style={styles.container}
         initialRoute={{
           title: 'UIExplorer',
-          component: UIExplorerList,
+          component: UIExplorerList, //,TabBarExample
           passProps: {
             onExternalExampleRequested: (example) => {
               this.setState({ openExternalExample: example, });
@@ -73,5 +75,6 @@ var styles = StyleSheet.create({
 });
 
 AppRegistry.registerComponent('UIExplorerApp', () => UIExplorerApp);
+//AppRegistry.registerComponent('UIExplorerApp', () => TabBarExample);
 
 module.exports = UIExplorerApp;

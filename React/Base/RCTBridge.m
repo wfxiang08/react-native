@@ -26,8 +26,7 @@ NSString *const RCTDidCreateNativeModules = @"RCTDidCreateNativeModules";
 // 提前声明
 @class RCTBatchedBridge;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTBatchedBridge : RCTBridge <RCTInvalidating>
 
 @property (nonatomic, weak) RCTBridge *parentBridge;
@@ -36,19 +35,20 @@ NSString *const RCTDidCreateNativeModules = @"RCTDidCreateNativeModules";
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTBridge ()
-
+// 内部引用的 batchedBridge
 @property (nonatomic, strong) RCTBatchedBridge *batchedBridge;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 // 类似单例?
 static NSMutableArray *RCTModuleClasses;
 
 // 声明 & 实现
 NSArray *RCTGetModuleClasses(void);
-NSArray *RCTGetModuleClasses(void)
-{
+NSArray *RCTGetModuleClasses(void) {
   return RCTModuleClasses;
 }
 
@@ -57,8 +57,8 @@ NSArray *RCTGetModuleClasses(void)
  * prior to the first bridge initialization.
  */
 void RCTRegisterModule(Class);
-void RCTRegisterModule(Class moduleClass)
-{
+// 注册就是把ModuleClass添加到数组中
+void RCTRegisterModule(Class moduleClass) {
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
     RCTModuleClasses = [NSMutableArray new];
@@ -75,8 +75,7 @@ void RCTRegisterModule(Class moduleClass)
 /**
  * This function returns the module name for a given class.
  */
-NSString *RCTBridgeModuleNameForClass(Class cls)
-{
+NSString *RCTBridgeModuleNameForClass(Class cls) {
 #if RCT_DEV
   RCTAssert([cls conformsToProtocol:@protocol(RCTBridgeModule)], @"Bridge module classes must conform to RCTBridgeModule");
 #endif
@@ -100,47 +99,52 @@ NSString *RCTBridgeModuleNameForClass(Class cls)
  * Check if class has been registered
  */
 BOOL RCTBridgeModuleClassIsRegistered(Class);
-BOOL RCTBridgeModuleClassIsRegistered(Class cls)
-{
+BOOL RCTBridgeModuleClassIsRegistered(Class cls) {
+  // 为什么默认是 已经注册呢?
   return [objc_getAssociatedObject(cls, &RCTBridgeModuleClassIsRegistered) ?: @YES boolValue];
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTBridge
 
 dispatch_queue_t RCTJSThread;
 
-+ (void)initialize
-{
++ (void)initialize {
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
 
     // Set up JS thread
+    // 不太明白?
     RCTJSThread = (id)kCFNull;
 
 #if RCT_DEBUG
-
+    // 正常Release是如何工作的呢?
     // Set up module classes
     static unsigned int classCount;
     Class *classes = objc_copyClassList(&classCount);
-
-    for (unsigned int i = 0; i < classCount; i++)
-    {
+    
+    // 遍历所有的Class
+    for (unsigned int i = 0; i < classCount; i++) {
       Class cls = classes[i];
+      
+      // 对于实现了协议: RCTBridgeModule 的class, 将它注册到 RCTModuleClasses 中
       Class superclass = cls;
-      while (superclass)
-      {
-        if (class_conformsToProtocol(superclass, @protocol(RCTBridgeModule)))
-        {
+      while (superclass) {
+        if (class_conformsToProtocol(superclass, @protocol(RCTBridgeModule))) {
+          
           if (![RCTModuleClasses containsObject:cls]) {
             RCTLogWarn(@"Class %@ was not exported. Did you forget to use "
                        "RCT_EXPORT_MODULE()?", cls);
 
             RCTRegisterModule(cls);
+            // XXX: 为什么设置为NO呢? 奇怪
             objc_setAssociatedObject(cls, &RCTBridgeModuleClassIsRegistered,
                                      @NO, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
           }
           break;
         }
+        
+        // 继续沿着class hierarchy遍历
         superclass = class_getSuperclass(superclass);
       }
     }
@@ -160,26 +164,24 @@ static RCTBridge *RCTCurrentBridgeInstance = nil;
  * that need to access the bridge for purposes such as logging, but should not
  * be relied upon to return any particular instance, due to race conditions.
  */
-+ (instancetype)currentBridge
-{
++ (instancetype)currentBridge {
   return RCTCurrentBridgeInstance;
 }
 
-+ (void)setCurrentBridge:(RCTBridge *)currentBridge
-{
++ (void)setCurrentBridge:(RCTBridge *)currentBridge {
   RCTCurrentBridgeInstance = currentBridge;
 }
 
 - (instancetype)initWithDelegate:(id<RCTBridgeDelegate>)delegate
-                   launchOptions:(NSDictionary *)launchOptions
-{
+                   launchOptions:(NSDictionary *)launchOptions {
   RCTAssertMainThread();
 
   if ((self = [super init])) {
     RCTPerformanceLoggerStart(RCTPLTTI);
-
+    
     _delegate = delegate;
     _launchOptions = [launchOptions copy];
+
     [self setUp];
     [self bindKeys];
   }
@@ -188,8 +190,7 @@ static RCTBridge *RCTCurrentBridgeInstance = nil;
 
 - (instancetype)initWithBundleURL:(NSURL *)bundleURL
                    moduleProvider:(RCTBridgeModuleProviderBlock)block
-                    launchOptions:(NSDictionary *)launchOptions
-{
+                    launchOptions:(NSDictionary *)launchOptions {
   RCTAssertMainThread();
 
   if ((self = [super init])) {
@@ -206,8 +207,7 @@ static RCTBridge *RCTCurrentBridgeInstance = nil;
 
 RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
-- (void)dealloc
-{
+- (void)dealloc {
   /**
    * This runs only on the main thread, but crashes the subclass
    * RCTAssertMainThread();
@@ -216,8 +216,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   [self invalidate];
 }
 
-- (void)bindKeys
-{
+- (void)bindKeys {
   RCTAssertMainThread();
 
   [[NSNotificationCenter defaultCenter] addObserver:self
@@ -234,6 +233,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   [commands registerKeyCommandWithInput:@"r"
                           modifierFlags:UIKeyModifierCommand
                                  action:^(__unused UIKeyCommand *command) {
+                                    // 在两个地方回发送 RCTReloadNotification
+                                    // 1. 模拟器: Cmd + R
+                                    // 2. redBox 重新加载
                                     [[NSNotificationCenter defaultCenter] postNotificationName:RCTReloadNotification
                                                                                         object:nil
                                                                                       userInfo:nil];
@@ -242,55 +244,56 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 #endif
 }
 
-- (RCTEventDispatcher *)eventDispatcher
-{
+- (RCTEventDispatcher *)eventDispatcher {
   return self.modules[RCTBridgeModuleNameForClass([RCTEventDispatcher class])];
 }
 
-- (void)reload
-{
+- (void)reload {
   /**
    * AnyThread
    */
   dispatch_async(dispatch_get_main_queue(), ^{
+    // 确保最终的在main_queue中执行
     [self invalidate];
     [self setUp];
   });
 }
 
-- (void)setUp
-{
+- (void)setUp {
   RCTAssertMainThread();
-
+  // 0. PreCondition
+  // 状态都Clear干净了
+  
+  // 1. 获取URL
   _bundleURL = [self.delegate sourceURLForBridge:self] ?: _bundleURL;
+  
+  // 2. 重建Bridge
+  // _batchedBridge==NULL
   _batchedBridge = [[RCTBatchedBridge alloc] initWithParentBridge:self];
 }
 
-- (BOOL)isLoading
-{
+- (BOOL)isLoading {
   return _batchedBridge.loading;
 }
 
-- (BOOL)isValid
-{
+- (BOOL)isValid {
   return _batchedBridge.valid;
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
   RCTAssertMainThread();
-
+  
+  // 情况状态
   [_batchedBridge invalidate];
   _batchedBridge = nil;
 }
 
-- (void)logMessage:(NSString *)message level:(NSString *)level
-{
+// 通过JS处理 log
+- (void)logMessage:(NSString *)message level:(NSString *)level {
   [_batchedBridge logMessage:message level:level];
 }
 
-- (NSDictionary *)modules
-{
+- (NSDictionary *)modules {
   return _batchedBridge.modules;
 }
 
@@ -301,11 +304,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
               only be called from bridge instance in a bridge module", @(__func__)); \
 }
 
-- (void)enqueueJSCall:(NSString *)moduleDotMethod args:(NSArray *)args
-{
+- (void)enqueueJSCall:(NSString *)moduleDotMethod args:(NSArray *)args {
   [self.batchedBridge enqueueJSCall:moduleDotMethod args:args];
 }
 
+// ???
 RCT_INNER_BRIDGE_ONLY(_invokeAndProcessModule:(__unused NSString *)module
                       method:(__unused NSString *)method
                       arguments:(__unused NSArray *)args);

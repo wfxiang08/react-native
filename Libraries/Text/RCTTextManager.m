@@ -34,7 +34,7 @@ RCT_EXPORT_MODULE()
 }
 
 #pragma mark - Shadow properties
-
+// 导出这些属性，专门用于文字处理
 RCT_EXPORT_SHADOW_PROPERTY(color, UIColor)
 RCT_EXPORT_SHADOW_PROPERTY(fontFamily, NSString)
 RCT_EXPORT_SHADOW_PROPERTY(fontSize, CGFloat)

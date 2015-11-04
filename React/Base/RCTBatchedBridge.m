@@ -45,21 +45,23 @@ typedef NS_ENUM(NSUInteger, RCTBridgeFields) {
 
 RCT_EXTERN NSArray *RCTGetModuleClasses(void);
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTBridge ()
-
+// 内部接口重新声明(但是又不对外暴露)
 + (instancetype)currentBridge;
 + (void)setCurrentBridge:(RCTBridge *)bridge;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTBatchedBridge : RCTBridge
 
 @property (nonatomic, weak) RCTBridge *parentBridge;
 
 @end
 
-@implementation RCTBatchedBridge
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTBatchedBridge {
   BOOL _loading;
   BOOL _valid;
   BOOL _wasBatchActive;
@@ -71,8 +73,8 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   NSMutableSet *_frameUpdateObservers;
 }
 
-- (instancetype)initWithParentBridge:(RCTBridge *)bridge
-{
+//
+- (instancetype)initWithParentBridge:(RCTBridge *)bridge {
   RCTAssertMainThread();
   RCTAssertParam(bridge);
 
@@ -87,13 +89,16 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
      */
     _valid = YES;
     _loading = YES;
+    
     _pendingCalls = [NSMutableArray new];
     _moduleDataByID = [NSMutableArray new];
     _frameUpdateObservers = [NSMutableSet new];
     _jsDisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(_jsThreadUpdate:)];
 
+    // 这个作用?
     [RCTBridge setCurrentBridge:self];
 
+    // BatchedBridge 创建时即开始加载JS
     [[NSNotificationCenter defaultCenter] postNotificationName:RCTJavaScriptWillStartLoadingNotification
                                                         object:self
                                                       userInfo:@{ @"bridge": self }];
@@ -103,16 +108,24 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   return self;
 }
 
-- (void)start
-{
+- (void)start {
+  // http://my.oschina.net/jeans/blog/356852
   dispatch_queue_t bridgeQueue = dispatch_queue_create("com.facebook.react.RCTBridgeQueue", DISPATCH_QUEUE_CONCURRENT);
-
+  
+  // 派遣组
+  // 和Lock相似
   dispatch_group_t initModulesAndLoadSource = dispatch_group_create();
+
+  //
+  // 1. Task 1: 记载JS(不管在什么线程中....)
+  //
   dispatch_group_enter(initModulesAndLoadSource);
+
   __weak RCTBatchedBridge *weakSelf = self;
   __block NSData *sourceCode;
   [self loadSource:^(NSError *error, NSData *source) {
     if (error) {
+      // 加载出错，在主线程中展示错误
       dispatch_async(dispatch_get_main_queue(), ^{
         [weakSelf stopLoadingWithError:error];
       });
@@ -122,7 +135,9 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
     dispatch_group_leave(initModulesAndLoadSource);
   }];
 
+  //
   // Synchronously initialize all native modules
+  //
   [self initModules];
 
   if (RCTProfileIsProfiling()) {
@@ -130,10 +145,14 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
     RCTProfileHookModules(self);
   }
 
+  // 2. Task 2: 在 bridgeQueue 中配置 Module相关的东西
   __block NSString *config;
   dispatch_group_enter(initModulesAndLoadSource);
+  
   dispatch_async(bridgeQueue, ^{
     dispatch_group_t setupJSExecutorAndModuleConfig = dispatch_group_create();
+    // 异步执行: setupExecutor
+    //          moduleConfig之后，在通知: injectJSONConfiguration
     dispatch_group_async(setupJSExecutorAndModuleConfig, bridgeQueue, ^{
       [weakSelf setupExecutor];
     });
@@ -151,6 +170,13 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
       // injectJSONConfiguration and executeSourceCode will schedule operations on the
       // same queue anyway.
       RCTPerformanceLoggerStart(RCTPLNativeModuleInjectConfig);
+
+      //
+      // module配置完毕之后，需要将Modules的信息导出到JS中
+      // 添加对象:
+      // global.__fbBatchedBridgeConfig
+      // 不需要等待JS执行完毕
+      //
       [weakSelf injectJSONConfiguration:config onComplete:^(NSError *error) {
         RCTPerformanceLoggerEnd(RCTPLNativeModuleInjectConfig);
         if (error) {
@@ -163,6 +189,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
     });
   });
 
+  // 上面的事情执行完毕之后，会到主线程执行: sourceCode?
   dispatch_group_notify(initModulesAndLoadSource, dispatch_get_main_queue(), ^{
     RCTBatchedBridge *strongSelf = weakSelf;
     if (sourceCode && strongSelf.loading) {
@@ -173,8 +200,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   });
 }
 
-- (void)loadSource:(RCTSourceLoadBlock)_onSourceLoad
-{
+- (void)loadSource:(RCTSourceLoadBlock)_onSourceLoad {
   RCTPerformanceLoggerStart(RCTPLScriptDownload);
   int cookie = RCTProfileBeginAsyncEvent(0, @"JavaScript download", nil);
 
@@ -184,8 +210,8 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
 
     // Only override the value of __DEV__ if running in debug mode, and if we
     // haven't explicitly overridden the packager dev setting in the bundleURL
-    BOOL shouldOverrideDev = RCT_DEBUG && ([self.bundleURL isFileURL] ||
-    [self.bundleURL.absoluteString rangeOfString:@"dev="].location == NSNotFound);
+    // 如果是Debug模式，强制开启 调试模式
+    BOOL shouldOverrideDev = RCT_DEBUG && ([self.bundleURL isFileURL] || [self.bundleURL.absoluteString rangeOfString:@"dev="].location == NSNotFound);
 
     // Force JS __DEV__ value to match RCT_DEBUG
     if (shouldOverrideDev) {
@@ -212,6 +238,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   if ([self.delegate respondsToSelector:@selector(loadSourceForBridge:withBlock:)]) {
     [self.delegate loadSourceForBridge:_parentBridge withBlock:onSourceLoad];
   } else if (self.bundleURL) {
+    // 主动加载JS
     [RCTJavaScriptLoader loadBundleAtURL:self.bundleURL onComplete:onSourceLoad];
   } else {
     // Allow testing without a script
@@ -225,15 +252,23 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   }
 }
 
-- (void)initModules
-{
+//
+// 如何初始化 Modules呢?
+//
+- (void)initModules {
   RCTAssertMainThread();
   RCTPerformanceLoggerStart(RCTPLNativeModuleInit);
 
   // Register passed-in module instances
+  // moduleName <---> Module Class Instance(实例)
   NSMutableDictionary *preregisteredModules = [NSMutableDictionary new];
 
   NSArray *extraModules = nil;
+  
+  //
+  // 1. self.delegate 一般为AppDelegate
+  // 默认情况下: 没有extraModules
+  //           如果我们自己扩展了一些Modules, 那么可以实现此Selector
   if (self.delegate) {
     if ([self.delegate respondsToSelector:@selector(extraModulesForBridge:)]) {
       extraModules = [self.delegate extraModulesForBridge:_parentBridge];
@@ -249,16 +284,21 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   // Instantiate modules
   _moduleDataByID = [NSMutableArray new];
   NSMutableDictionary *modulesByName = [preregisteredModules mutableCopy];
+
+  //
+  // 2. ExtraModules和系统预定义的Modules不应该重复
+  //
   for (Class moduleClass in RCTGetModuleClasses()) {
      NSString *moduleName = RCTBridgeModuleNameForClass(moduleClass);
 
      // Check if module instance has already been registered for this name
      id<RCTBridgeModule> module = modulesByName[moduleName];
 
-     if (module) {
+    if (module) {
        // Preregistered instances takes precedence, no questions asked
        if (!preregisteredModules[moduleName]) {
          // It's OK to have a name collision as long as the second instance is nil
+         // 除非系统的module不能实例化
          RCTAssert([moduleClass new] == nil,
                    @"Attempted to register RCTBridgeModule class %@ for the name "
                    "'%@', but name was already registered by class %@", moduleClass,
@@ -273,7 +313,9 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
      }
   }
 
-  // Store modules
+  //
+  // 3. Store modules, 以及一个特殊的 Module(JavascriptExecutor)
+  //
   _modulesByName = [[RCTModuleMap alloc] initWithDictionary:modulesByName];
 
   /**
@@ -282,6 +324,9 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
    */
   _javaScriptExecutor = _modulesByName[RCTBridgeModuleNameForClass(self.executorClass)];
 
+  //
+  // 所有的Module都共享一个 bridge
+  //
   for (id<RCTBridgeModule> module in _modulesByName.allValues) {
     // Bridge must be set before moduleData is set up, as methodQueue
     // initialization requires it (View Managers get their queue by calling
@@ -290,19 +335,23 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
       module.bridge = self;
     }
 
+    // ModuleData是做啥的?
+    // 每一个Instance都有一个对应的ModuleData
     RCTModuleData *moduleData = [[RCTModuleData alloc] initWithExecutor:_javaScriptExecutor
                                                                moduleID:@(_moduleDataByID.count)
                                                                instance:module];
     [_moduleDataByID addObject:moduleData];
   }
 
+  //
+  // 4. NativeModules加载完毕
+  //
   [[NSNotificationCenter defaultCenter] postNotificationName:RCTDidCreateNativeModules
                                                       object:self];
   RCTPerformanceLoggerEnd(RCTPLNativeModuleInit);
 }
 
-- (void)setupExecutor
-{
+- (void)setupExecutor {
   [_javaScriptExecutor setUp];
 }
 
@@ -345,20 +394,25 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   _jsDisplayLink.paused = pauseDisplayLink;
 }
 
+//
+// 添加全局变量: __fbBatchedBridgeConfig
+//
 - (void)injectJSONConfiguration:(NSString *)configJSON
-                     onComplete:(void (^)(NSError *))onComplete
-{
+                     onComplete:(void (^)(NSError *))onComplete {
   if (!self.valid) {
     return;
   }
 
+  //
+  // 1. 添加对象:
+  // global.__fbBatchedBridgeConfig
+  //
   [_javaScriptExecutor injectJSONText:configJSON
                   asGlobalObjectNamed:@"__fbBatchedBridgeConfig"
                              callback:onComplete];
 }
 
-- (void)executeSourceCode:(NSData *)sourceCode
-{
+- (void)executeSourceCode:(NSData *)sourceCode {
   if (!self.valid || !_javaScriptExecutor) {
     return;
   }
@@ -366,7 +420,10 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   RCTSourceCode *sourceCodeModule = self.modules[RCTBridgeModuleNameForClass([RCTSourceCode class])];
   sourceCodeModule.scriptURL = self.bundleURL;
   sourceCodeModule.scriptData = sourceCode;
-
+  
+  //
+  // 1. 加载JS, 执行JS的所有的Callback
+  //
   [self enqueueApplicationScript:sourceCode url:self.bundleURL onComplete:^(NSError *loadError) {
     if (!self.isValid) {
       return;
@@ -395,8 +452,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   }];
 }
 
-- (void)didFinishLoading
-{
+- (void)didFinishLoading {
   _loading = NO;
   [_javaScriptExecutor executeBlockOnJavaScriptQueue:^{
     for (NSArray *call in _pendingCalls) {
@@ -407,8 +463,7 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   }];
 }
 
-- (void)stopLoadingWithError:(NSError *)error
-{
+- (void)stopLoadingWithError:(NSError *)error {
   RCTAssertMainThread();
 
   if (!self.isValid || !self.loading) {
@@ -446,8 +501,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   [_parentBridge reload];
 }
 
-- (Class)executorClass
-{
+//
+// 默认为: RCTContextExecutor
+// 但是如何是iOs6等，可能就是Webview了
+//
+- (Class)executorClass {
   return _parentBridge.executorClass ?: [RCTContextExecutor class];
 }
 
@@ -483,8 +541,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   return _valid;
 }
 
-- (NSDictionary *)modules
-{
+- (NSDictionary *)modules {
   if (RCT_DEBUG && self.isValid && _modulesByName == nil) {
     RCTLogError(@"Bridge modules have not yet been initialized. You may be "
                 "trying to access a module too early in the startup procedure.");
@@ -494,8 +551,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 #pragma mark - RCTInvalidating
 
-- (void)invalidate
-{
+- (void)invalidate {
   if (!self.valid) {
     return;
   }
@@ -504,13 +560,16 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
   _loading = NO;
   _valid = NO;
+  
+  // 1. 如果已经失效，则不再关注: invalidate
   if ([RCTBridge currentBridge] == self) {
     [RCTBridge setCurrentBridge:nil];
   }
 
-  // Invalidate modules
+  // 2. Invalidate modules
   dispatch_group_t group = dispatch_group_create();
   for (RCTModuleData *moduleData in _moduleDataByID) {
+    // 除了JS Executor之外，其他的都统一调用 invalidate
     if (moduleData.instance == _javaScriptExecutor) {
       continue;
     }
@@ -523,6 +582,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     moduleData.queue = nil;
   }
 
+  // 3. 所有的modules invalidate之后怎么办?
   dispatch_group_notify(group, dispatch_get_main_queue(), ^{
     [_javaScriptExecutor executeBlockOnJavaScriptQueue:^{
       [_jsDisplayLink invalidate];
@@ -542,8 +602,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   });
 }
 
-- (void)logMessage:(NSString *)message level:(NSString *)level
-{
+- (void)logMessage:(NSString *)message level:(NSString *)level {
   // 如果开启Log, 则通过调用JS输出日志
   // 也可以在XCode中输出日志
   if (RCT_DEBUG) {
@@ -559,8 +618,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 /**
  * Public. Can be invoked from any thread.
  */
-- (void)enqueueJSCall:(NSString *)moduleDotMethod args:(NSArray *)args
-{
+- (void)enqueueJSCall:(NSString *)moduleDotMethod args:(NSArray *)args {
   // 参数调用的格式:
   // 字符串0, 字符串1, ..., 参数数组
   // moduleDotMethod 注意参数的格式
@@ -573,9 +631,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 /**
  * Private hack to support `setTimeout(fn, 0)`
+ * 异步执行
  */
-- (void)_immediatelyCallTimer:(NSNumber *)timer
-{
+- (void)_immediatelyCallTimer:(NSNumber *)timer {
   RCTAssertJSThread();
 
   dispatch_block_t block = ^{
@@ -584,6 +642,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
                                 arguments:@[@"JSTimersExecution", @"callTimers", @[@[timer]]]];
   };
 
+  // “优先”异步执行block？
   if ([_javaScriptExecutor respondsToSelector:@selector(executeAsyncBlockOnJavaScriptQueue:)]) {
     [_javaScriptExecutor executeAsyncBlockOnJavaScriptQueue:block];
   } else {
@@ -593,11 +652,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 - (void)enqueueApplicationScript:(NSData *)script
                              url:(NSURL *)url
-                      onComplete:(RCTJavaScriptCompleteBlock)onComplete
-{
+                      onComplete:(RCTJavaScriptCompleteBlock)onComplete {
   RCTAssert(onComplete != nil, @"onComplete block passed in should be non-nil");
 
   RCTProfileBeginFlowEvent();
+  // 加载完毕新的脚本，然后flushedQueue, 批量执行脚本
   [_javaScriptExecutor executeApplicationScript:script sourceURL:url onComplete:^(NSError *scriptLoadError) {
     RCTProfileEndFlowEvent();
     RCTAssertJSThread();
@@ -608,16 +667,16 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     }
 
     RCTProfileBeginEvent(0, @"FetchApplicationScriptCallbacks", nil);
+
     [_javaScriptExecutor executeJSCall:@"BatchedBridge"
                                 method:@"flushedQueue"
                              arguments:@[]
-                              callback:^(id json, NSError *error)
-     {
+                              callback:^(id json, NSError *error) {
        RCTProfileEndEvent(0, @"js_call,init", @{
          @"json": RCTNullIfNil(json),
          @"error": RCTNullIfNil(error),
        });
-
+                              
        [self handleBuffer:json batchEnded:YES];
 
        onComplete(error);
@@ -631,8 +690,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
  * Called by enqueueJSCall from any thread, or from _immediatelyCallTimer,
  * on the JS thread, but only in non-batched mode.
  */
-- (void)_invokeAndProcessModule:(NSString *)module method:(NSString *)method arguments:(NSArray *)args
-{
+- (void)_invokeAndProcessModule:(NSString *)module method:(NSString *)method arguments:(NSArray *)args {
   /**
    * AnyThread
    */
@@ -649,7 +707,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
       return;
     }
 
-    // 如何执行JS呢?
+    // 调用JS函数
+    // 或延迟调用JS函数
     if (strongSelf.loading) {
       [strongSelf->_pendingCalls addObject:@[module, method, args]];
     } else {
@@ -660,8 +719,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 - (void)_actuallyInvokeAndProcessModule:(NSString *)module
                                  method:(NSString *)method
-                              arguments:(NSArray *)args
-{
+                              arguments:(NSArray *)args {
   RCTAssertJSThread();
 
   [[NSNotificationCenter defaultCenter] postNotificationName:RCTEnqueueNotification object:nil userInfo:nil];
@@ -678,6 +736,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     
     // JS处理完毕
     [[NSNotificationCenter defaultCenter] postNotificationName:RCTDequeueNotification object:nil userInfo:nil];
+    
+    // handleBuffer如何处理?
     [self handleBuffer:json batchEnded:YES];
   };
 
@@ -689,8 +749,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 #pragma mark - Payload Processing
 
-- (void)handleBuffer:(id)buffer batchEnded:(BOOL)batchEnded
-{
+- (void)handleBuffer:(id)buffer batchEnded:(BOOL)batchEnded {
   RCTAssertJSThread();
 
   if (buffer != nil && buffer != (id)kCFNull) {
@@ -707,8 +766,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   }
 }
 
-- (void)handleBuffer:(id)buffer
-{
+- (void)handleBuffer:(id)buffer {
+  // 1. 确保返回的数据位: Array
   NSArray *requestsArray = [RCTConvert NSArray:buffer];
 
 #if RCT_DEBUG
@@ -728,6 +787,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 
 #endif
 
+  // 2. Array包含3个元素，每个元素都是一个队列
   NSArray *moduleIDs = requestsArray[RCTBridgeFieldRequestModuleIDs];
   NSArray *methodIDs = requestsArray[RCTBridgeFieldMethodIDs];
   NSArray *paramsArrays = requestsArray[RCTBridgeFieldParamss];
@@ -739,24 +799,34 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     return;
   }
 
+  
+  // 基于Map的HashTable
   NSMapTable *buckets = [[NSMapTable alloc] initWithKeyOptions:NSPointerFunctionsStrongMemory
                                                   valueOptions:NSPointerFunctionsStrongMemory
                                                       capacity:_moduleDataByID.count];
+
+  // 如何执行代码呢?
   for (NSUInteger i = 0; i < numRequests; i++) {
+    // 1. 首先获得Module
     RCTModuleData *moduleData = _moduleDataByID[[moduleIDs[i] integerValue]];
     if (RCT_DEBUG) {
       // verify that class has been registered
       (void)_modulesByName[moduleData.name];
     }
+    
+    // 2.
     id queue = [moduleData queue];
     NSMutableOrderedSet *set = [buckets objectForKey:queue];
     if (!set) {
       set = [NSMutableOrderedSet new];
       [buckets setObject:set forKey:queue];
     }
+
+    // 将任务分配到不同的queue中，保持已有的顺序; 同时保证唯一
     [set addObject:@(i)];
   }
 
+  // 然后按照queue一个一个地处理（其实就是任务分发，各个queue是并行的）
   for (id queue in buckets) {
     RCTProfileBeginFlowEvent();
 
@@ -779,10 +849,12 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
         @"calls": @(calls.count),
       });
     };
-
+    
+    // JSThread直接执行
     if (queue == RCTJSThread) {
       [_javaScriptExecutor executeBlockOnJavaScriptQueue:block];
     } else if (queue) {
+      // 其他的thread异步执行
       dispatch_async(queue, block);
     }
   }
@@ -791,6 +863,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 - (void)batchDidComplete
 {
   // TODO: batchDidComplete is only used by RCTUIManager - can we eliminate this special case?
+  //
+  // DOM Tree等修改是批量进行的，一口气改完，然后再Render
+  //
   for (RCTModuleData *moduleData in _moduleDataByID) {
     if ([moduleData.instance respondsToSelector:@selector(batchDidComplete)]) {
       [moduleData dispatchBlock:^{
@@ -803,8 +878,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 - (BOOL)_handleRequestNumber:(NSUInteger)i
                     moduleID:(NSUInteger)moduleID
                     methodID:(NSUInteger)methodID
-                      params:(NSArray *)params
-{
+                      params:(NSArray *)params {
   if (!self.isValid) {
     return NO;
   }
@@ -828,6 +902,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     return NO;
   }
 
+  // OC如何执行JS的调用呢?
+  // 获取moduleData, method, 以及params
+  // 接下来反序列化等等
+  //
   @try {
     [method invokeWithBridge:self module:moduleData.instance arguments:params];
   }
@@ -876,8 +954,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   RCTProfileEndEvent(0, @"objc_call", nil);
 }
 
-- (void)startProfiling
-{
+- (void)startProfiling {
   RCTAssertMainThread();
 
   [_javaScriptExecutor executeBlockOnJavaScriptQueue:^{
@@ -885,8 +962,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   }];
 }
 
-- (void)stopProfiling:(void (^)(NSData *))callback
-{
+- (void)stopProfiling:(void (^)(NSData *))callback {
   RCTAssertMainThread();
 
   [_javaScriptExecutor executeBlockOnJavaScriptQueue:^{
