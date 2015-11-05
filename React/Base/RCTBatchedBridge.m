@@ -69,6 +69,8 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   NSMutableArray *_pendingCalls;
   NSMutableArray *_moduleDataByID;
   RCTModuleMap *_modulesByName;
+  
+  // 非常关键的东西?
   CADisplayLink *_jsDisplayLink;
   NSMutableSet *_frameUpdateObservers;
 }
@@ -93,9 +95,14 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
     _pendingCalls = [NSMutableArray new];
     _moduleDataByID = [NSMutableArray new];
     _frameUpdateObservers = [NSMutableSet new];
+    
     _jsDisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(_jsThreadUpdate:)];
+    //
+    // CADisplayLink 默认每s执行60次, 如果设置: frameInterval=2, 则每s执行30次....
+    // _jsDisplayLink.frameInterval = 2;
+    //
 
-    // 这个作用?
+    // 一次只有一个RCTBridge, 并且也只有一个RCTBatchedBridge
     [RCTBridge setCurrentBridge:self];
 
     // BatchedBridge 创建时即开始加载JS
@@ -355,17 +362,21 @@ RCT_EXTERN NSArray *RCTGetModuleClasses(void);
   [_javaScriptExecutor setUp];
 }
 
-- (NSString *)moduleConfig
-{
+- (NSString *)moduleConfig {
   NSMutableArray *config = [NSMutableArray new];
   for (RCTModuleData *moduleData in _moduleDataByID) {
     [config addObject:moduleData.config];
+
+    //
+    // 注意: FrameUpdate
+    //
     if ([moduleData.instance conformsToProtocol:@protocol(RCTFrameUpdateObserver)]) {
       [_frameUpdateObservers addObject:moduleData];
 
       id<RCTFrameUpdateObserver> observer = (id<RCTFrameUpdateObserver>)moduleData.instance;
       __weak typeof(self) weakSelf = self;
       __weak typeof(_javaScriptExecutor) weakJavaScriptExecutor = _javaScriptExecutor;
+
       observer.pauseCallback = ^{
         [weakJavaScriptExecutor executeBlockOnJavaScriptQueue:^{
           [weakSelf updateJSDisplayLinkState];
@@ -925,22 +936,29 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
   return YES;
 }
 
-- (void)_jsThreadUpdate:(CADisplayLink *)displayLink
-{
+//
+- (void)_jsThreadUpdate:(CADisplayLink *)displayLink {
   RCTAssertJSThread();
   RCTProfileBeginEvent(0, @"DispatchFrameUpdate", nil);
 
+  // 1. 构建一个FrameUpdate数据结构
   RCTFrameUpdate *frameUpdate = [[RCTFrameUpdate alloc] initWithDisplayLink:displayLink];
+  
   for (RCTModuleData *moduleData in _frameUpdateObservers) {
     id<RCTFrameUpdateObserver> observer = (id<RCTFrameUpdateObserver>)moduleData.instance;
+    
+    // 如果paused, 那么不再通知
     if (!observer.paused) {
+      // 如果不使用DEV, 那么后面的name也不需要了
       RCT_IF_DEV(NSString *name = [NSString stringWithFormat:@"[%@ didUpdateFrame:%f]", observer, displayLink.timestamp];)
       RCTProfileBeginFlowEvent();
 
       [moduleData dispatchBlock:^{
         RCTProfileEndFlowEvent();
         RCTProfileBeginEvent(0, name, nil);
+        
         [observer didUpdateFrame:frameUpdate];
+        
         RCTProfileEndEvent(0, @"objc_call,fps", nil);
       }];
     }

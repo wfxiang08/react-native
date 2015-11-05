@@ -157,6 +157,7 @@ RCT_EXPORT_METHOD(setAccessibilityContentSizeMultipliers:(NSDictionary *)JSMulti
   self.multipliers = multipliers;
 }
 
+// 获取当前的状态
 RCT_EXPORT_METHOD(getMultiplier:(RCTResponseSenderBlock)callback)
 {
   if (callback) {
@@ -174,8 +175,8 @@ RCT_EXPORT_METHOD(getCurrentVoiceOverState:(RCTResponseSenderBlock)callback
 
 @implementation RCTBridge (RCTAccessibilityManager)
 
-- (RCTAccessibilityManager *)accessibilityManager
-{
+// 所有的Manager都是Singletion, 大家共享，因此所有的实例返回的结果都一样
+- (RCTAccessibilityManager *)accessibilityManager {
   return self.modules[RCTBridgeModuleNameForClass([RCTAccessibilityManager class])];
 }
 

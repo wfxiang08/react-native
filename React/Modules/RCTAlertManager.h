@@ -12,6 +12,9 @@
 #import "RCTBridgeModule.h"
 #import "RCTInvalidating.h"
 
+//
+// 如何定义一个RCTBridgeModule呢?
+// BridgeModule是一个固定的对象，调用他们的方法时，一般像调用一个工厂方法，创建一个实例，然后做某件事情
 @interface RCTAlertManager : NSObject <RCTBridgeModule, RCTInvalidating>
 
 @end

@@ -21,8 +21,7 @@
 
 #import "RCTLog.h"
 
-NSString *RCTJSONStringify(id jsonObject, NSError **error)
-{
+NSString *RCTJSONStringify(id jsonObject, NSError **error) {
   static SEL JSONKitSelector = NULL;
   static NSSet *collectionTypes;
   static dispatch_once_t onceToken;
@@ -169,8 +168,7 @@ id RCTJSONClean(id object)
   return (id)kCFNull;
 }
 
-NSString *RCTMD5Hash(NSString *string)
-{
+NSString *RCTMD5Hash(NSString *string) {
   const char *str = string.UTF8String;
   unsigned char result[CC_MD5_DIGEST_LENGTH];
   CC_MD5(str, (CC_LONG)strlen(str), result);
@@ -459,8 +457,8 @@ NSData *RCTGzipData(NSData *input, float level)
   return output;
 }
 
-NSString *RCTBundlePathForURL(NSURL *URL)
-{
+// 前缀一样的，就可以认为是: Bundle
+NSString *RCTBundlePathForURL(NSURL *URL) {
   if (!URL.fileURL) {
     // Not a file path
     return nil;
@@ -474,13 +472,20 @@ NSString *RCTBundlePathForURL(NSURL *URL)
   return [path substringFromIndex:bundlePath.length + 1];
 }
 
-BOOL RCTIsXCAssetURL(NSURL *imageURL)
-{
+//
+// Xcode Assert URL是什么特征呢?
+//
+BOOL RCTIsXCAssetURL(NSURL *imageURL) {
+  
   NSString *name = RCTBundlePathForURL(imageURL);
   if (name.pathComponents.count != 1) {
     // URL is invalid, or is a file path, not an XCAsset identifier
     return NO;
   }
+  
+  // 要么没有Ext，要么Ext为png
+  // 为什么不能是jpg呢?
+  //
   NSString *extension = [name pathExtension];
   if (extension.length && ![extension isEqualToString:@"png"]) {
     // Not a png
@@ -491,5 +496,7 @@ BOOL RCTIsXCAssetURL(NSURL *imageURL)
     // File actually exists in bundle, so is not an XCAsset
     return NO;
   }
+  
+  NSLog(@"Image: %@, %d", name, YES);
   return YES;
 }

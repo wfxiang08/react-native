@@ -25,8 +25,10 @@ RCT_EXPORT_MODULE()
 #endif
 
 RCT_EXPORT_METHOD(getScriptText:(RCTResponseSenderBlock)successCallback
-                  failureCallback:(RCTResponseErrorBlock)failureCallback)
-{
+                  failureCallback:(RCTResponseErrorBlock)failureCallback) {
+  // SourceCode的作用?
+  // 用于DEV工具
+  //
   if (RCT_DEV && self.scriptData && self.scriptURL) {
     NSString *scriptText = [[NSString alloc] initWithData:self.scriptData encoding:NSUTF8StringEncoding];
 
@@ -36,8 +38,7 @@ RCT_EXPORT_METHOD(getScriptText:(RCTResponseSenderBlock)successCallback
   }
 }
 
-- (NSDictionary *)constantsToExport
-{
+- (NSDictionary *)constantsToExport {
   NSString *URL = self.bridge.bundleURL.absoluteString ?: @"";
   return @{@"scriptURL": URL};
 }

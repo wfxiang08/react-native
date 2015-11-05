@@ -11,8 +11,10 @@
 
 @class CADisplayLink;
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * Interface containing the information about the last screen refresh.
+ * 简单的数据结构
  */
 @interface RCTFrameUpdate : NSObject
 
@@ -30,6 +32,7 @@
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * Protocol that must be implemented for subscribing to display refreshes (DisplayLink updates)
  */

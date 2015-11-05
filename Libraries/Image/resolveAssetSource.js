@@ -110,12 +110,15 @@ function pickScale(scales: Array<number>, deviceScale: number): number {
 }
 
 function resolveAssetSource(source: any): ?ResolvedAssetSource {
+  // 'image!btn_service_selected' 如何处理呢? string
   if (typeof source === 'object') {
     return source;
   }
 
+  // 'image!btn_service_selected'
   var asset = AssetRegistry.getAssetByID(source);
   if (asset) {
+    // 将asset转换成为ImageSource
     return assetToImageSource(asset);
   }
 

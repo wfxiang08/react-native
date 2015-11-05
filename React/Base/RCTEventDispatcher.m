@@ -35,6 +35,8 @@ static NSNumber *RCTGetEventID(id<RCTEvent> event)
   );
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTBaseEvent
 
 @synthesize viewTag = _viewTag;
@@ -81,12 +83,13 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTEventDispatcher() <RCTFrameUpdateObserver>
 
 @end
 
-@implementation RCTEventDispatcher
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTEventDispatcher {
   NSMutableDictionary *_eventQueue;
   NSLock *_eventQueueLock;
 }
@@ -97,8 +100,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 RCT_EXPORT_MODULE()
 
-- (instancetype)init
-{
+- (instancetype)init {
   if ((self = [super init])) {
     _paused = YES;
     _eventQueue = [NSMutableDictionary new];
@@ -107,8 +109,7 @@ RCT_EXPORT_MODULE()
   return self;
 }
 
-- (void)setPaused:(BOOL)paused
-{
+- (void)setPaused:(BOOL)paused {
   if (_paused != paused) {
     _paused = paused;
     if (_pauseCallback) {
@@ -117,25 +118,23 @@ RCT_EXPORT_MODULE()
   }
 }
 
-- (void)sendAppEventWithName:(NSString *)name body:(id)body
-{
+- (void)sendAppEventWithName:(NSString *)name body:(id)body {
   [_bridge enqueueJSCall:@"RCTNativeAppEventEmitter.emit"
                     args:body ? @[name, body] : @[name]];
 }
 
-- (void)sendDeviceEventWithName:(NSString *)name body:(id)body
-{
+- (void)sendDeviceEventWithName:(NSString *)name body:(id)body {
   [_bridge enqueueJSCall:@"RCTDeviceEventEmitter.emit"
                     args:body ? @[name, body] : @[name]];
 }
 
-- (void)sendInputEventWithName:(NSString *)name body:(NSDictionary *)body
-{
+- (void)sendInputEventWithName:(NSString *)name body:(NSDictionary *)body {
   if (RCT_DEBUG) {
     RCTAssert([body[@"target"] isKindOfClass:[NSNumber class]],
       @"Event body dictionary must include a 'target' property containing a React tag");
   }
 
+  // 和控件相关的 第一个参数一般为: reactTag(控件的Id)
   name = RCTNormalizeInputEventName(name);
   [_bridge enqueueJSCall:@"RCTEventEmitter.receiveEvent"
                     args:body ? @[body[@"target"], name, body] : @[body[@"target"], name]];
@@ -144,8 +143,7 @@ RCT_EXPORT_MODULE()
 - (void)sendTextEventWithType:(RCTTextEventType)type
                      reactTag:(NSNumber *)reactTag
                          text:(NSString *)text
-                   eventCount:(NSInteger)eventCount
-{
+                   eventCount:(NSInteger)eventCount {
   static NSString *events[] = {
     @"focus",
     @"blur",
@@ -154,6 +152,7 @@ RCT_EXPORT_MODULE()
     @"endEditing",
   };
 
+  // 并不是所有的Event都带有: text的，例如: focus, blur等等
   [self sendInputEventWithName:events[type] body:text ? @{
     @"text": text,
     @"eventCount": @(eventCount),
@@ -164,18 +163,21 @@ RCT_EXPORT_MODULE()
   }];
 }
 
-- (void)sendEvent:(id<RCTEvent>)event
-{
+- (void)sendEvent:(id<RCTEvent>)event {
+  // 如果不能合并，则直接dispatch
   if (!event.canCoalesce) {
     [self dispatchEvent:event];
     return;
   }
+  
+  // 如果可以合并，则先合并(例如: UpdateStatus等，可以先合并，再发送)
 
   [_eventQueueLock lock];
 
   NSNumber *eventID = RCTGetEventID(event);
   id<RCTEvent> previousEvent = _eventQueue[eventID];
 
+  // Event的合并? 如何合并呢?
   if (previousEvent) {
     event = [previousEvent coalesceWithEvent:event];
   }
@@ -186,8 +188,10 @@ RCT_EXPORT_MODULE()
   [_eventQueueLock unlock];
 }
 
-- (void)dispatchEvent:(id<RCTEvent>)event
-{
+//
+// 将Event通过bridge发送到JS
+//
+- (void)dispatchEvent:(id<RCTEvent>)event {
   NSMutableArray *arguments = [NSMutableArray new];
 
   if (event.viewTag) {
@@ -200,23 +204,23 @@ RCT_EXPORT_MODULE()
     [arguments addObject:event.body];
   }
 
+  // 调用JS当前的函数
   [_bridge enqueueJSCall:[[event class] moduleDotMethod]
                     args:arguments];
 }
 
-- (dispatch_queue_t)methodQueue
-{
+- (dispatch_queue_t)methodQueue {
   return RCTJSThread;
 }
 
-- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update
-{
+- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update {
   [_eventQueueLock lock];
    NSDictionary *eventQueue = _eventQueue;
   _eventQueue = [NSMutableDictionary new];
   self.paused = YES;
   [_eventQueueLock unlock];
 
+  // 将当前所有积压的Event全部发送出去
   for (id<RCTEvent> event in eventQueue.allValues) {
     [self dispatchEvent:event];
   }

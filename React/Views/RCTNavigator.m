@@ -284,11 +284,13 @@ NSInteger kNeverProgressed = -10000;
     _previousRequestedTopOfStack = kNeverRequested; // So that we initialize with a push.
     _previousViews = @[];
     _currentViews = [[NSMutableArray alloc] initWithCapacity:0];
+    
     __weak RCTNavigator *weakSelf = self;
     _navigationController = [[RCTNavigationController alloc] initWithScrollCallback:^{
       [weakSelf dispatchFakeScrollEvent];
     }];
     _navigationController.delegate = self;
+    
     RCTAssert([self requestSchedulingJavaScriptNavigation], @"Could not acquire JS navigation lock on init");
 
     [self addSubview:_navigationController.view];

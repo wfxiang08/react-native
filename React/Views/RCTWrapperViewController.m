@@ -30,8 +30,7 @@
 @synthesize currentTopLayoutGuide = _currentTopLayoutGuide;
 @synthesize currentBottomLayoutGuide = _currentBottomLayoutGuide;
 
-- (instancetype)initWithContentView:(UIView *)contentView
-{
+- (instancetype)initWithContentView:(UIView *)contentView {
   RCTAssertParam(contentView);
 
   if ((self = [super initWithNibName:nil bundle:nil])) {
@@ -41,8 +40,7 @@
   return self;
 }
 
-- (instancetype)initWithNavItem:(RCTNavItem *)navItem
-{
+- (instancetype)initWithNavItem:(RCTNavItem *)navItem {
   if ((self = [self initWithContentView:navItem])) {
     _navItem = navItem;
   }
@@ -52,16 +50,15 @@
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithNibName:(NSString *)nn bundle:(NSBundle *)nb)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (void)viewWillLayoutSubviews
-{
+- (void)viewWillLayoutSubviews {
   [super viewWillLayoutSubviews];
 
+  // 这个? 暂不懂
   _currentTopLayoutGuide = self.topLayoutGuide;
   _currentBottomLayoutGuide = self.bottomLayoutGuide;
 }
 
-static BOOL RCTFindScrollViewAndRefreshContentInsetInView(UIView *view)
-{
+static BOOL RCTFindScrollViewAndRefreshContentInsetInView(UIView *view) {
   if ([view conformsToProtocol:@protocol(RCTAutoInsetsProtocol)]) {
     [(id <RCTAutoInsetsProtocol>) view refreshContentInset];
     return YES;
@@ -74,10 +71,10 @@ static BOOL RCTFindScrollViewAndRefreshContentInsetInView(UIView *view)
   return NO;
 }
 
-- (void)viewDidLayoutSubviews
-{
+- (void)viewDidLayoutSubviews {
   [super viewDidLayoutSubviews];
 
+  // ???
   if (_previousTopLayoutLength != _currentTopLayoutGuide.length ||
       _previousBottomLayoutLength != _currentBottomLayoutGuide.length) {
     RCTFindScrollViewAndRefreshContentInsetInView(_contentView);
@@ -121,6 +118,7 @@ static UIView *RCTFindNavBarShadowViewInView(UIView *view)
 
     RCTFindNavBarShadowViewInView(bar).hidden = _navItem.shadowHidden;
 
+    // 如何定制
     UINavigationItem *item = self.navigationItem;
     item.title = _navItem.title;
     item.backBarButtonItem = _navItem.backButtonItem;
@@ -129,8 +127,7 @@ static UIView *RCTFindNavBarShadowViewInView(UIView *view)
   }
 }
 
-- (void)loadView
-{
+- (void)loadView {
   // Add a wrapper so that the wrapper view managed by the
   // UINavigationController doesn't end up resetting the frames for
   //`contentView` which is a react-managed view.
@@ -139,8 +136,7 @@ static UIView *RCTFindNavBarShadowViewInView(UIView *view)
   self.view = _wrapperView;
 }
 
-- (void)didMoveToParentViewController:(UIViewController *)parent
-{
+- (void)didMoveToParentViewController:(UIViewController *)parent {
   // There's no clear setter for navigation controllers, but did move to parent
   // view controller provides the desired effect. This is called after a pop
   // finishes, be it a swipe to go back or a standard tap on the back button

@@ -13,12 +13,13 @@
 
 #import "RCTUtils.h"
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTFrameUpdate
 
 RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
-- (instancetype)initWithDisplayLink:(CADisplayLink *)displayLink
-{
+// RCTFrameUpdate存在意义?
+- (instancetype)initWithDisplayLink:(CADisplayLink *)displayLink {
   if ((self = [super init])) {
     _timestamp = displayLink.timestamp;
     _deltaTime = displayLink.duration;

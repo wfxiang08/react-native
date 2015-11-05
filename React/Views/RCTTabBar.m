@@ -18,57 +18,69 @@
 #import "RCTWrapperViewController.h"
 #import "UIView+React.h"
 
+//
+// iOS的界面组成
+// 1. 由一系列带有特定功能的界面组合而成
+// 2. 这些views有的和viewController绑定，共同构成UIViewController
+//
 @interface RCTTabBar() <UITabBarControllerDelegate>
 
 @end
 
-@implementation RCTTabBar
-{
+@implementation RCTTabBar {
   BOOL _tabsChanged;
   UITabBarController *_tabController;
   NSMutableArray *_tabViews;
 }
 
-- (instancetype)initWithFrame:(CGRect)frame
-{
+// TabBar和_tabController的关系?
+- (instancetype)initWithFrame:(CGRect)frame {
   if ((self = [super initWithFrame:frame])) {
     _tabViews = [NSMutableArray new];
+    
+    // 内部包含一个全屏的View
+    // UILayoutContainerView
+    // UITransitionView
+    // UIViewControllerWrapperView
+    //
+    // 由于UITabBarController的属性，因此在RCTTabBar上又自动增加了以上三个View
     _tabController = [UITabBarController new];
     _tabController.delegate = self;
-    [self addSubview:_tabController.view];
+    
+    NSLog(@"ViewClass: %@", [_tabController.view class]);
+    [self addSubview: _tabController.view]; // UIView
   }
   return self;
 }
 
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (UIViewController *)reactViewController
-{
+- (UIViewController *)reactViewController {
   return _tabController;
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
   _tabController.delegate = nil;
 }
 
-- (NSArray *)reactSubviews
-{
+- (NSArray *)reactSubviews {
   return _tabViews;
 }
 
-- (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex
-{
+- (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex {
   if (![view isKindOfClass:[RCTTabBarItem class]]) {
     RCTLogError(@"subview should be of type RCTTabBarItem");
     return;
   }
+  
+  // 添加tabs
+  // 当时tabs没有直接加入Views中
+  //
   [_tabViews insertObject:view atIndex:atIndex];
   _tabsChanged = YES;
 }
 
-- (void)removeReactSubview:(UIView *)subview
-{
+- (void)removeReactSubview:(UIView *)subview {
   if (_tabViews.count == 0) {
     RCTLogError(@"should have at least one view to remove a subview");
     return;
@@ -77,19 +89,19 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _tabsChanged = YES;
 }
 
-- (void)layoutSubviews
-{
+- (void)layoutSubviews {
   [super layoutSubviews];
   [self reactAddControllerToClosestParent:_tabController];
   _tabController.view.frame = self.bounds;
 }
 
-- (void)reactBridgeDidFinishTransaction
-{
+- (void)reactBridgeDidFinishTransaction {
   // we can't hook up the VC hierarchy in 'init' because the subviews aren't
   // hooked up yet, so we do it on demand here whenever a transaction has finished
   [self reactAddControllerToClosestParent:_tabController];
 
+  // 1. RCTTabBar
+  // 和: RCTTabBarItem的关系
   if (_tabsChanged) {
 
     NSMutableArray *viewControllers = [NSMutableArray array];
@@ -100,38 +112,40 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
       }
       [viewControllers addObject:controller];
     }
-
+    
+    // 2. 设置了: UITabBarController
     _tabController.viewControllers = viewControllers;
     _tabsChanged = NO;
   }
 
+  // 3. RCTTabBarItem 如何处理呢?
   [[self reactSubviews] enumerateObjectsUsingBlock:
    ^(RCTTabBarItem *tab, NSUInteger index, __unused BOOL *stop) {
+
+    // tabBarItem RCTTabBarItem#barItem 关联的途径
     UIViewController *controller = _tabController.viewControllers[index];
     controller.tabBarItem = tab.barItem;
+     
+     // RCTTabBarItem 选中了，则对应的Controller也就选中了
     if (tab.selected) {
       _tabController.selectedViewController = controller;
     }
   }];
 }
 
-- (UIColor *)barTintColor
-{
+- (UIColor *)barTintColor {
   return _tabController.tabBar.barTintColor;
 }
 
-- (void)setBarTintColor:(UIColor *)barTintColor
-{
+- (void)setBarTintColor:(UIColor *)barTintColor {
   _tabController.tabBar.barTintColor = barTintColor;
 }
 
-- (UIColor *)tintColor
-{
+- (UIColor *)tintColor {
   return _tabController.tabBar.tintColor;
 }
 
-- (void)setTintColor:(UIColor *)tintColor
-{
+- (void)setTintColor:(UIColor *)tintColor {
   _tabController.tabBar.tintColor = tintColor;
 }
 
@@ -145,9 +159,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
 #pragma mark - UITabBarControllerDelegate
 
-- (BOOL)tabBarController:(UITabBarController *)tabBarController shouldSelectViewController:(UIViewController *)viewController
-{
+- (BOOL)tabBarController:(UITabBarController *)tabBarController shouldSelectViewController:(UIViewController *)viewController {
   NSUInteger index = [tabBarController.viewControllers indexOfObject:viewController];
+  
+  // 快要选择新的Tab时，回调: onPress
   RCTTabBarItem *tab = [self reactSubviews][index];
   if (tab.onPress) tab.onPress(nil);
   return NO;

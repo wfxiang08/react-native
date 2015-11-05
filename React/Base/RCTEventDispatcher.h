@@ -11,6 +11,9 @@
 
 #import "RCTBridge.h"
 
+// 两种类型的Event:
+// Text
+// Scroll
 typedef NS_ENUM(NSInteger, RCTTextEventType) {
   RCTTextEventTypeFocus,
   RCTTextEventTypeBlur,
@@ -41,6 +44,8 @@ RCT_EXTERN const NSInteger RCTTextUpdateLagWarningThreshold;
  */
 RCT_EXTERN NSString *RCTNormalizeInputEventName(NSString *eventName);
 
+//----------------------------------------------------------------------------------------------------------------------
+// 定义了RCTEvent协议
 @protocol RCTEvent <NSObject>
 
 @required
@@ -57,6 +62,9 @@ RCT_EXTERN NSString *RCTNormalizeInputEventName(NSString *eventName);
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
+// BaseEvent
+// 实现了几个属性和初始化函数
 @interface RCTBaseEvent : NSObject <RCTEvent>
 
 - (instancetype)initWithViewTag:(NSNumber *)viewTag
@@ -65,9 +73,12 @@ RCT_EXTERN NSString *RCTNormalizeInputEventName(NSString *eventName);
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * This class wraps the -[RCTBridge enqueueJSCall:args:] method, and
  * provides some convenience methods for generating event calls.
+ * 注意接口的定义:
+ *       封装接口
  */
 @interface RCTEventDispatcher : NSObject <RCTBridgeModule>
 

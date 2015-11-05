@@ -21,6 +21,7 @@ export type PackagerAsset = {
 
 var assets: Array<PackagerAsset> = [];
 
+// 注册&读取
 function registerAsset(asset: PackagerAsset): number {
   // `push` returns new array length, so the first asset will
   // get id 1 (not 0) to make the value truthy

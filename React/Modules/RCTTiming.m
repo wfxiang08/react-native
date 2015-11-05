@@ -24,6 +24,8 @@
 
 @end
 
+
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTTimer : NSObject
 
 @property (nonatomic, strong, readonly) NSDate *target;
@@ -33,13 +35,15 @@
 
 @end
 
+// JS中的timer使用
+// setTimer(function(){}, interval)类似
+//
 @implementation RCTTimer
 
 - (instancetype)initWithCallbackID:(NSNumber *)callbackID
                           interval:(NSTimeInterval)interval
                         targetTime:(NSTimeInterval)targetTime
-                           repeats:(BOOL)repeats
-{
+                           repeats:(BOOL)repeats {
   if ((self = [super init])) {
     _interval = interval;
     _repeats = repeats;
@@ -52,8 +56,7 @@
 /**
  * Returns `YES` if we should invoke the JS callback.
  */
-- (BOOL)updateFoundNeedsJSUpdate
-{
+- (BOOL)updateFoundNeedsJSUpdate {
   if (_target && _target.timeIntervalSinceNow <= 0) {
     // The JS Timers will do fine grained calculating of expired timeouts.
     _target = _repeats ? [NSDate dateWithTimeIntervalSinceNow:_interval] : nil;
@@ -64,8 +67,7 @@
 
 @end
 
-@implementation RCTTiming
-{
+@implementation RCTTiming {
   RCTSparseArray *_timers;
 }
 
@@ -75,12 +77,14 @@
 
 RCT_EXPORT_MODULE()
 
-- (instancetype)init
-{
+- (instancetype)init {
   if ((self = [super init])) {
     _paused = YES;
     _timers = [RCTSparseArray new];
 
+    // Application的状态
+    // 如果进入后台，则停止Timers
+    // 如果进入前台，则开始Timers
     for (NSString *name in @[UIApplicationWillResignActiveNotification,
                              UIApplicationDidEnterBackgroundNotification,
                              UIApplicationWillTerminateNotification]) {
@@ -103,29 +107,24 @@ RCT_EXPORT_MODULE()
   return self;
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (dispatch_queue_t)methodQueue
-{
+- (dispatch_queue_t)methodQueue {
   return RCTJSThread;
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
   [self stopTimers];
   _bridge = nil;
 }
 
-- (void)stopTimers
-{
+- (void)stopTimers {
   self.paused = YES;
 }
 
-- (void)startTimers
-{
+- (void)startTimers {
   if (!_bridge || _timers.count == 0) {
     return;
   }
@@ -133,29 +132,36 @@ RCT_EXPORT_MODULE()
   self.paused = NO;
 }
 
-- (void)setPaused:(BOOL)paused
-{
+- (void)setPaused:(BOOL)paused {
   if (_paused != paused) {
     _paused = paused;
+    
+    // pause状态改变的时候，调用
     if (_pauseCallback) {
       _pauseCallback();
     }
   }
 }
 
-- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update
-{
+- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update {
   NSMutableArray *timersToCall = [NSMutableArray new];
+
+  // _timers.allObjects 进行copy
+  // 每秒执行60次，然后通过： CADisplayLink & NSDate即可完成NSTimer的功能
   for (RCTTimer *timer in _timers.allObjects) {
+    // 检查时间是否到了
     if ([timer updateFoundNeedsJSUpdate]) {
       [timersToCall addObject:timer.callbackID];
     }
+    
+    // 不再repeat, 则删除Timer
     if (!timer.target) {
       _timers[timer.callbackID] = nil;
     }
   }
 
   // call timers that need to be called
+  // 如果有timers, 则回调JS
   if (timersToCall.count > 0) {
     [_bridge enqueueJSCall:@"JSTimersExecution.callTimers" args:@[timersToCall]];
   }
@@ -178,6 +184,7 @@ RCT_EXPORT_METHOD(createTimer:(nonnull NSNumber *)callbackID
                   repeats:(BOOL)repeats)
 {
   if (jsDuration == 0 && repeats == NO) {
+    // 什么是一个Frame呢?
     // For super fast, one-off timers, just enqueue them immediately rather than waiting a frame.
     [_bridge _immediatelyCallTimer:callbackID];
     return;

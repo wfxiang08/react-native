@@ -16,23 +16,20 @@
 
 @implementation UIView (React)
 
-- (NSNumber *)reactTag
-{
+// 对应的React组件都应该有Tag
+- (NSNumber *)reactTag {
   return objc_getAssociatedObject(self, _cmd);
 }
 
-- (void)setReactTag:(NSNumber *)reactTag
-{
+- (void)setReactTag:(NSNumber *)reactTag {
   objc_setAssociatedObject(self, @selector(reactTag), reactTag, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-- (BOOL)isReactRootView
-{
+- (BOOL)isReactRootView {
   return RCTIsReactRootView(self.reactTag);
 }
 
-- (NSNumber *)reactTagAtPoint:(CGPoint)point
-{
+- (NSNumber *)reactTagAtPoint:(CGPoint)point {
   UIView *view = [self hitTest:point withEvent:nil];
   while (view && !view.reactTag) {
     view = view.superview;
@@ -40,29 +37,24 @@
   return view.reactTag;
 }
 
-- (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex
-{
+- (void)insertReactSubview:(UIView *)subview atIndex:(NSInteger)atIndex {
   [self insertSubview:subview atIndex:atIndex];
 }
 
-- (void)removeReactSubview:(UIView *)subview
-{
+- (void)removeReactSubview:(UIView *)subview {
   RCTAssert(subview.superview == self, @"%@ is a not a subview of %@", subview, self);
   [subview removeFromSuperview];
 }
 
-- (NSArray *)reactSubviews
-{
+- (NSArray *)reactSubviews {
   return self.subviews;
 }
 
-- (UIView *)reactSuperview
-{
+- (UIView *)reactSuperview {
   return self.superview;
 }
 
-- (void)reactSetFrame:(CGRect)frame
-{
+- (void)reactSetFrame:(CGRect)frame {
   // These frames are in terms of anchorPoint = topLeft, but internally the
   // views are anchorPoint = center for easier scale and rotation animations.
   // Convert the frame so it works with anchorPoint = center.
@@ -82,13 +74,11 @@
   self.bounds = bounds;
 }
 
-- (void)reactSetInheritedBackgroundColor:(UIColor *)inheritedBackgroundColor
-{
+- (void)reactSetInheritedBackgroundColor:(UIColor *)inheritedBackgroundColor {
   self.backgroundColor = inheritedBackgroundColor;
 }
 
-- (UIViewController *)reactViewController
-{
+- (UIViewController *)reactViewController {
   id responder = [self nextResponder];
   while (responder) {
     if ([responder isKindOfClass:[UIViewController class]]) {
@@ -99,8 +89,7 @@
   return nil;
 }
 
-- (void)reactAddControllerToClosestParent:(UIViewController *)controller
-{
+- (void)reactAddControllerToClosestParent:(UIViewController *)controller {
   if (!controller.parentViewController) {
     UIView *parentView = (UIView *)self.reactSuperview;
     while (parentView) {
@@ -120,8 +109,7 @@
  */
 - (void)reactWillMakeFirstResponder {};
 - (void)reactDidMakeFirstResponder {};
-- (BOOL)reactRespondsToTouch:(__unused UITouch *)touch
-{
+- (BOOL)reactRespondsToTouch:(__unused UITouch *)touch {
   return YES;
 }
 

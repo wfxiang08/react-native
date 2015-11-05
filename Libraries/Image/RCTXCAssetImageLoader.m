@@ -17,8 +17,7 @@
 
 RCT_EXPORT_MODULE()
 
-- (BOOL)canLoadImageURL:(NSURL *)requestURL
-{
+- (BOOL)canLoadImageURL:(NSURL *)requestURL {
   return RCTIsXCAssetURL(requestURL);
 }
 

@@ -55,8 +55,7 @@
   return _storage[@(idx)];
 }
 
-- (void)setObject:(id)obj atIndexedSubscript:(NSUInteger)idx
-{
+- (void)setObject:(id)obj atIndexedSubscript:(NSUInteger)idx {
   self[@(idx)] = obj;
 }
 

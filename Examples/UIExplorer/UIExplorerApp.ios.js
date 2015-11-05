@@ -50,8 +50,8 @@ var UIExplorerApp = React.createClass({
       <NavigatorIOS
         style={styles.container}
         initialRoute={{
-          title: 'UIExplorer',
-          component: UIExplorerList, //,TabBarExample
+          title: '春雨医生',
+          component: TabBarExample, //, UIExplorerList,
           passProps: {
             onExternalExampleRequested: (example) => {
               this.setState({ openExternalExample: example, });

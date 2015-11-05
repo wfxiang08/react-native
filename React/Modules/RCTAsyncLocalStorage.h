@@ -23,13 +23,17 @@
  */
 @interface RCTAsyncLocalStorage : NSObject <RCTBridgeModule,RCTInvalidating>
 
-@property (nonatomic, assign) BOOL clearOnInvalidate;
+@property (nonatomic, assign) BOOL clearOnInvalidate; // 谨慎使用
 
 @property (nonatomic, readonly, getter=isValid) BOOL valid;
 
+// 异步的LocalStorage?
+// 不是JS自己的
+//
 - (void)multiGet:(NSArray *)keys callback:(RCTResponseSenderBlock)callback;
 - (void)multiSet:(NSArray *)kvPairs callback:(RCTResponseSenderBlock)callback;
 - (void)multiRemove:(NSArray *)keys callback:(RCTResponseSenderBlock)callback;
+
 - (void)clear:(RCTResponseSenderBlock)callback;
 - (void)getAllKeys:(RCTResponseSenderBlock)callback;
 

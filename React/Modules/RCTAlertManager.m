@@ -13,22 +13,22 @@
 #import "RCTLog.h"
 #import "RCTUtils.h"
 
+// 内部需要实现 UIAlertViewDelegate
 @interface RCTAlertManager() <UIAlertViewDelegate>
 
 @end
 
-@implementation RCTAlertManager
-{
+@implementation RCTAlertManager {
   NSMutableArray *_alerts;
   NSMutableArray *_alertControllers;
   NSMutableArray *_alertCallbacks;
   NSMutableArray *_alertButtonKeys;
 }
 
+// 导出Module
 RCT_EXPORT_MODULE()
 
-- (instancetype)init
-{
+- (instancetype)init {
   if ((self = [super init])) {
     _alerts = [NSMutableArray new];
     _alertControllers = [NSMutableArray new];
@@ -38,16 +38,19 @@ RCT_EXPORT_MODULE()
   return self;
 }
 
-- (dispatch_queue_t)methodQueue
-{
+// UI相关：放在主线程中，就不用专门创建线程了
+- (dispatch_queue_t)methodQueue {
   return dispatch_get_main_queue();
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
+  // 关闭所有的 _alerts
   for (UIAlertView *alert in _alerts) {
     [alert dismissWithClickedButtonIndex:0 animated:YES];
   }
+  
+  // 关闭所有的_alertControllers
+  // 居然还有动画
   for (UIAlertController *alertController in _alertControllers) {
     [alertController.presentingViewController dismissViewControllerAnimated:YES completion:nil];
   }
@@ -87,7 +90,8 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
   if (RCTRunningInAppExtension()) {
     return;
   }
-
+  
+  // 谁来负责 present
   UIViewController *presentingController = RCTSharedApplication().delegate.window.rootViewController;
   if (presentingController == nil) {
     RCTLogError(@"Tried to display alert view but there is no application window. args: %@", args);
@@ -95,6 +99,7 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
   }
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
+  // 忽略
   if ([UIAlertController class] == nil) {
     UIAlertView *alertView = RCTAlertView(title, nil, self, nil, nil);
     NSMutableArray *buttonKeys = [[NSMutableArray alloc] initWithCapacity:buttons.count];
@@ -113,7 +118,9 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
       }
       NSString *buttonKey = button.allKeys.firstObject;
       NSString *buttonTitle = [button[buttonKey] description];
+
       [alertView addButtonWithTitle:buttonTitle];
+      
       if ([buttonKey isEqualToString:@"cancel"]) {
         alertView.cancelButtonIndex = index;
       }
@@ -122,6 +129,7 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
     }
 
     [_alerts addObject:alertView];
+    // 如果没有callback, 则添加空的callback
     [_alertCallbacks addObject:callback ?: ^(__unused id unused) {}];
     [_alertButtonKeys addObject:buttonKeys];
 
@@ -134,6 +142,7 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
                                         message:nil
                                  preferredStyle:UIAlertControllerStyleAlert];
 
+    // 专门处理文字部分: 静态或可以Edit的
     if (allowsTextInput) {
       [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
         textField.text = message;
@@ -141,7 +150,7 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
     } else {
       alertController.message = message;
     }
-
+    // 如何理解buttons？
     for (NSDictionary *button in buttons) {
       if (button.count != 1) {
         RCTLogError(@"Button definitions should have exactly one key.");
@@ -169,8 +178,7 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
 
 #pragma mark - UIAlertViewDelegate
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
-{
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
   NSUInteger index = [_alerts indexOfObject:alertView];
   RCTAssert(index != NSNotFound, @"Dismissed alert was not recognised");
 
@@ -186,6 +194,8 @@ RCT_EXPORT_METHOD(alertWithArgs:(NSDictionary *)args
 
   callback(args);
 
+  // 旧版iOs中: callback和调用者分离，需要临时保存数据
+  // 在新版中，直接忽略
   [_alerts removeObjectAtIndex:index];
   [_alertCallbacks removeObjectAtIndex:index];
   [_alertButtonKeys removeObjectAtIndex:index];

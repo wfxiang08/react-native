@@ -36,6 +36,7 @@
  * The RCT_DEV macro can be used to enable or disable development tools
  * such as the debug executors, dev menu, red box, etc.
  */
+// 开发工具
 #ifndef RCT_DEV
 #if DEBUG
 #define RCT_DEV 1

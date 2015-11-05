@@ -217,6 +217,10 @@ RCT_EXTERN void RCTRegisterModule(Class); \
     return @[@#js_name, @#method]; \
   }
 
+//+(NSArray*)__rct_export__js_name1010 {
+//  return @[@"js_name", @"hello"];
+//}
+
 /**
  * Injects methods into JS.  Entries in this array are used in addition to any
  * methods defined using the macros above.  This method is called only once,

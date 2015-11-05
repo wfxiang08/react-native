@@ -14,6 +14,7 @@
 
 extern NSString *const RCTAccessibilityManagerDidUpdateMultiplierNotification; // posted when multiplier is changed
 
+// 什么叫做 Accessibility呢?
 @interface RCTAccessibilityManager : NSObject <RCTBridgeModule>
 
 @property (nonatomic, readonly) CGFloat multiplier;
@@ -25,6 +26,7 @@ extern NSString *const RCTAccessibilityManagerDidUpdateMultiplierNotification; /
 
 @end
 
+// 为RCTBridge增加新的属性
 @interface RCTBridge (RCTAccessibilityManager)
 
 @property (nonatomic, readonly) RCTAccessibilityManager *accessibilityManager;

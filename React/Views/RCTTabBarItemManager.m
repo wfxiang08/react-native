@@ -16,8 +16,7 @@
 
 RCT_EXPORT_MODULE()
 
-- (UIView *)view
-{
+- (UIView *)view {
   return [RCTTabBarItem new];
 }
 
@@ -26,6 +25,9 @@ RCT_EXPORT_VIEW_PROPERTY(icon, id)
 RCT_REMAP_VIEW_PROPERTY(selectedIcon, barItem.selectedImage, UIImage)
 RCT_REMAP_VIEW_PROPERTY(badge, barItem.badgeValue, NSString)
 RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
+
+// + (NSArray *)propConfig_selectedIcon { return @[@"UIImage", @"barItem.selectedImage"]; }
+
 RCT_CUSTOM_VIEW_PROPERTY(title, NSString, RCTTabBarItem)
 {
   view.barItem.title = json ? [RCTConvert NSString:json] : defaultView.barItem.title;

@@ -23,8 +23,9 @@ static const NSUInteger RCTInlineValueThreshold = 100;
 
 #pragma mark - Static helper functions
 
-static id RCTErrorForKey(NSString *key)
-{
+static id RCTErrorForKey(NSString *key) {
+  // key必须有效:
+  // 1. 首先为字符串; 2. 其次长度有效
   if (![key isKindOfClass:[NSString class]]) {
     return RCTMakeAndLogError(@"Invalid key - must be a string.  Key: ", key, @{@"key": key});
   } else if (key.length < 1) {
@@ -34,8 +35,7 @@ static id RCTErrorForKey(NSString *key)
   }
 }
 
-static void RCTAppendError(id error, NSMutableArray **errors)
-{
+static void RCTAppendError(id error, NSMutableArray **errors) {
   if (error && errors) {
     if (!*errors) {
       *errors = [NSMutableArray new];
@@ -44,11 +44,13 @@ static void RCTAppendError(id error, NSMutableArray **errors)
   }
 }
 
-static id RCTReadFile(NSString *filePath, NSString *key, NSDictionary **errorOut)
-{
+// @return String or nil
+static id RCTReadFile(NSString *filePath, NSString *key, NSDictionary **errorOut) {
   if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
     NSError *error;
     NSStringEncoding encoding;
+    
+    // 以字符串的形式读取文件
     NSString *entryString = [NSString stringWithContentsOfFile:filePath usedEncoding:&encoding error:&error];
     if (error) {
       *errorOut = RCTMakeError(@"Failed to read storage file.", error, @{@"key": key});
@@ -61,8 +63,8 @@ static id RCTReadFile(NSString *filePath, NSString *key, NSDictionary **errorOut
   return nil;
 }
 
-static NSString *RCTGetStorageDirectory()
-{
+static NSString *RCTGetStorageDirectory() {
+  // StorageDir的目录
   static NSString *storageDirectory = nil;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
@@ -72,8 +74,7 @@ static NSString *RCTGetStorageDirectory()
   return storageDirectory;
 }
 
-static NSString *RCTGetManifestFilePath()
-{
+static NSString *RCTGetManifestFilePath() {
   static NSString *manifestFilePath = nil;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
@@ -82,14 +83,16 @@ static NSString *RCTGetManifestFilePath()
   return manifestFilePath;
 }
 
+
 // Only merges objects - all other types are just clobbered (including arrays)
-static void RCTMergeRecursive(NSMutableDictionary *destination, NSDictionary *source)
-{
+static void RCTMergeRecursive(NSMutableDictionary *destination, NSDictionary *source) {
   for (NSString *key in source) {
     id sourceValue = source[key];
+    
     if ([sourceValue isKindOfClass:[NSDictionary class]]) {
       id destinationValue = destination[key];
       NSMutableDictionary *nestedDestination;
+      
       if ([destinationValue classForCoder] == [NSMutableDictionary class]) {
         nestedDestination = destinationValue;
       } else {
@@ -97,6 +100,7 @@ static void RCTMergeRecursive(NSMutableDictionary *destination, NSDictionary *so
           // Ideally we wouldn't eagerly copy here...
           nestedDestination = [destinationValue mutableCopy];
         } else {
+          // 如果key对应的value不是dict, 而新的value是dict, 则整体覆盖
           destination[key] = [sourceValue copy];
         }
       }
@@ -105,13 +109,15 @@ static void RCTMergeRecursive(NSMutableDictionary *destination, NSDictionary *so
         destination[key] = nestedDestination;
       }
     } else {
+      // 其他类型，直接覆盖
+      // clobbered
       destination[key] = sourceValue;
     }
   }
 }
 
-static dispatch_queue_t RCTGetMethodQueue()
-{
+// 这个Queue的作用?
+static dispatch_queue_t RCTGetMethodQueue() {
   // We want all instances to share the same queue since they will be reading/writing the same files.
   static dispatch_queue_t queue;
   static dispatch_once_t onceToken;
@@ -122,8 +128,8 @@ static dispatch_queue_t RCTGetMethodQueue()
 }
 
 static BOOL RCTHasCreatedStorageDirectory = NO;
-static NSError *RCTDeleteStorageDirectory()
-{
+
+static NSError *RCTDeleteStorageDirectory() {
   NSError *error;
   [[NSFileManager defaultManager] removeItemAtPath:RCTGetStorageDirectory() error:&error];
   RCTHasCreatedStorageDirectory = NO;
@@ -143,49 +149,50 @@ static NSError *RCTDeleteStorageDirectory()
 
 RCT_EXPORT_MODULE()
 
-- (dispatch_queue_t)methodQueue
-{
+- (dispatch_queue_t)methodQueue {
   return RCTGetMethodQueue();
 }
 
-+ (void)clearAllData
-{
++ (void)clearAllData {
+  // 直接删除目录
+  // LocalStorage可以放在不同的文件中
   dispatch_async(RCTGetMethodQueue(), ^{
     RCTDeleteStorageDirectory();
   });
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
+  // 太暴力了！！！
   if (_clearOnInvalidate) {
     RCTDeleteStorageDirectory();
   }
+  
   _clearOnInvalidate = NO;
   _manifest = [NSMutableDictionary new];
   _haveSetup = NO;
 }
 
-- (BOOL)isValid
-{
+- (BOOL)isValid {
   return _haveSetup;
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
   [self invalidate];
 }
 
-- (NSString *)_filePathForKey:(NSString *)key
-{
+// 注意: 不同的key是放在不同的文件中的
+// TODO: 文件名是否需要优化，细分更多的目录
+//
+- (NSString *)_filePathForKey:(NSString *)key {
   NSString *safeFileName = RCTMD5Hash(key);
   return [RCTGetStorageDirectory() stringByAppendingPathComponent:safeFileName];
 }
 
-- (id)_ensureSetup
-{
+- (id)_ensureSetup {
   RCTAssertThread(RCTGetMethodQueue(), @"Must be executed on storage thread");
 
   NSError *error = nil;
+  // 确保目录存在
   if (!RCTHasCreatedStorageDirectory) {
     [[NSFileManager defaultManager] createDirectoryAtPath:RCTGetStorageDirectory()
                               withIntermediateDirectories:YES
@@ -196,6 +203,8 @@ RCT_EXPORT_MODULE()
     }
     RCTHasCreatedStorageDirectory = YES;
   }
+  
+  // Manifest文件作用?
   if (!_haveSetup) {
     NSDictionary *errorOut;
     NSString *serialized = RCTReadFile(RCTGetManifestFilePath(), nil, &errorOut);
@@ -209,8 +218,7 @@ RCT_EXPORT_MODULE()
   return nil;
 }
 
-- (id)_writeManifest:(NSMutableArray **)errors
-{
+- (id)_writeManifest:(NSMutableArray **)errors {
   NSError *error;
   NSString *serialized = RCTJSONStringify(_manifest, &error);
   [serialized writeToFile:RCTGetManifestFilePath() atomically:YES encoding:NSUTF8StringEncoding error:&error];
@@ -222,19 +230,24 @@ RCT_EXPORT_MODULE()
   return errorOut;
 }
 
-- (id)_appendItemForKey:(NSString *)key toArray:(NSMutableArray *)result
-{
+//
+// result = [..., XXX]
+// --->     [..., XXX, key, value_4_key]
+//
+- (id)_appendItemForKey:(NSString *)key toArray:(NSMutableArray *)result {
   id errorOut = RCTErrorForKey(key);
   if (errorOut) {
     return errorOut;
   }
   id value = [self _getValueForKey:key errorOut:&errorOut];
+  
+  // OC中数组不能带有nil元素，可以使用kCFNull
   [result addObject:@[key, RCTNullIfNil(value)]]; // Insert null if missing or failure.
   return errorOut;
 }
 
-- (NSString *)_getValueForKey:(NSString *)key errorOut:(NSDictionary **)errorOut
-{
+- (NSString *)_getValueForKey:(NSString *)key errorOut:(NSDictionary **)errorOut {
+  // _manifest: 存放什么信息呢?
   id value = _manifest[key]; // nil means missing, null means there is a data file, anything else is an inline value.
   if (value == (id)kCFNull) {
     NSString *filePath = [self _filePathForKey:key];
@@ -243,8 +256,12 @@ RCT_EXPORT_MODULE()
   return value;
 }
 
-- (id)_writeEntry:(NSArray *)entry
-{
+//
+// 注意: _manifest的维护
+//      当前函数只做一件事情: writeEntry, manifest的flush是放在外部处理的
+//
+- (id)_writeEntry:(NSArray *)entry {
+  
   if (![entry isKindOfClass:[NSArray class]] || entry.count != 2) {
     return RCTMakeAndLogError(@"Entries must be arrays of the form [key: string, value: string], got: ", entry, nil);
   }
@@ -259,15 +276,24 @@ RCT_EXPORT_MODULE()
   NSString *value = entry[1];
   NSString *filePath = [self _filePathForKey:key];
   NSError *error;
+  
+  // 小数据放在: manifest文件中
+  // 如果新的数据较小，则删除原来的数据(可能在manifest中，也可能在文件中: _manifest[key] == kCFNull 表明key应该在磁盘上
   if (value.length <= RCTInlineValueThreshold) {
     if (_manifest[key] && _manifest[key] != (id)kCFNull) {
+      // 最新新的value如果不放在磁盘上，则直接删除
       // If the value already existed but wasn't inlined, remove the old file.
       [[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
     }
     _manifest[key] = value;
     return nil;
   }
+  
+  // 处理non-inline value
+  // 先保存到磁盘
   [value writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:&error];
+  
+  // 将_manifest标记为: kCFNull
   if (error) {
     errorOut = RCTMakeError(@"Failed to write value.", error, @{@"key": key});
   } else {
@@ -279,8 +305,12 @@ RCT_EXPORT_MODULE()
 #pragma mark - Exported JS Functions
 
 RCT_EXPORT_METHOD(multiGet:(NSArray *)keys
-                  callback:(RCTResponseSenderBlock)callback)
-{
+                  callback:(RCTResponseSenderBlock)callback) {
+  //
+  // RCTResponseSenderBlock 参数: NSArray
+  // NSArray[0]: error_list
+  // NSArray[1]: result
+  //
   if (!callback) {
     RCTLogError(@"Called getItem without a callback.");
     return;
@@ -293,8 +323,12 @@ RCT_EXPORT_METHOD(multiGet:(NSArray *)keys
   }
   NSMutableArray *errors;
   NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:keys.count];
+
+  // 获取所有的key, value, 并且记录对应的Error
   for (NSString *key in keys) {
     id keyError = [self _appendItemForKey:key toArray:result];
+    
+    // errors: 只记录Error, 如果出现keyError == nil, 则跳过； 没有Error和key的对应关系
     RCTAppendError(keyError, &errors);
   }
   callback(@[RCTNullIfNil(errors), result]);
@@ -313,6 +347,8 @@ RCT_EXPORT_METHOD(multiSet:(NSArray *)kvPairs
     id keyError = [self _writeEntry:entry];
     RCTAppendError(keyError, &errors);
   }
+  
+  // Manifest最后保存一次
   [self _writeManifest:&errors];
   if (callback) {
     callback(@[RCTNullIfNil(errors)]);
@@ -327,6 +363,9 @@ RCT_EXPORT_METHOD(multiMerge:(NSArray *)kvPairs
     callback(@[@[errorOut]]);
     return;
   }
+  
+  // 如果Meger呢？
+  // __strong的作用?
   NSMutableArray *errors;
   for (__strong NSArray *entry in kvPairs) {
     id keyError;

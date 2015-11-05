@@ -112,6 +112,9 @@ var TabBarItemIOS = React.createClass({
       '' + this.props.badge :
       this.props.badge;
 
+    //
+    // TabItem如何Render呢?
+    //
     return (
       <RCTTabBarItem
         {...this.props}

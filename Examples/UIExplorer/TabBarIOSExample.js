@@ -17,6 +17,7 @@
 
 var React = require('react-native');
 var {
+  Image,
   StyleSheet,
   TabBarIOS,
   Text,
@@ -26,7 +27,7 @@ var {
 
 var TabBarExample = React.createClass({
   statics: {
-    title: '<TabBarIOS>',
+    title: '春雨医生',
     description: 'Tab-based navigation.',
   },
 
@@ -46,6 +47,10 @@ var TabBarExample = React.createClass({
       <View style={[styles.tabContent, {backgroundColor: color}]}>
         <Text style={styles.tabText}>{pageText}</Text>
         <Text style={styles.tabText}>{num} re-renders of the {pageText}</Text>
+        <Image source={require('image!btn_assistant_selected')} style={styles.imageDemo} />
+        <Image source={require('image!btn_assistant_selected')} style={styles.imageDemo2} />
+        <Image source={require('image!btn_assistant')} style={styles.imageDemo} />
+        <Image source={require('image!btn_air_hospital_selected')} style={styles.imageDemo2} />
       </View>
     );
   },
@@ -55,7 +60,8 @@ var TabBarExample = React.createClass({
   render: function() {
     return (
       <TabBarIOS
-        translucent={true}
+        selectedTab={this.state.selectedTab}
+        translucent={false}
         tintColor="#4dd363"
         barTintColor="#f9f9f9">
         <TabBarIOS.Item
@@ -85,6 +91,7 @@ var TabBarExample = React.createClass({
           }}>
           {this._renderContent('#783E33', '我的服务', this.state.notifCount)}
         </TabBarIOS.Item>
+
         <TabBarIOS.Item
           title="健康助手"
           icon={require('image!btn_assistant')}
@@ -140,6 +147,14 @@ var styles = StyleSheet.create({
   tabText: {
     color: 'white',
     margin: 50,
+  },
+  imageDemo: {
+    height: 86,
+    width: 98,
+  },
+  imageDemo2: {
+    height: 43,
+    width: 49,
   },
 });
 

@@ -423,6 +423,7 @@ RCT_CGSTRUCT_CONVERTER(CGAffineTransform, (@[
     return nil;
   }
 
+  // 1. 如何从JSON获取图片信息
   UIImage *image;
   NSString *path;
   CGFloat scale = 0.0;
@@ -442,6 +443,8 @@ RCT_CGSTRUCT_CONVERTER(CGAffineTransform, (@[
 
   NSURL *URL = [self NSURL:path];
   NSString *scheme = URL.scheme.lowercaseString;
+  
+  // URL格式:
   if ([scheme isEqualToString:@"file"]) {
     if (RCTIsXCAssetURL(URL)) {
       // Image may reside inside a .car file, in which case we have no choice

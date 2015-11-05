@@ -114,32 +114,27 @@ NSString *const RCTContentDidAppearNotification = @"RCTContentDidAppearNotificat
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (void)setBackgroundColor:(UIColor *)backgroundColor
-{
+- (void)setBackgroundColor:(UIColor *)backgroundColor {
   super.backgroundColor = backgroundColor;
   _contentView.backgroundColor = backgroundColor;
 }
 
-- (UIViewController *)reactViewController
-{
+- (UIViewController *)reactViewController {
   return _reactViewController ?: [super reactViewController];
 }
 
-- (BOOL)canBecomeFirstResponder
-{
+- (BOOL)canBecomeFirstResponder {
   return YES;
 }
 
-- (void)setLoadingView:(UIView *)loadingView
-{
+- (void)setLoadingView:(UIView *)loadingView {
   _loadingView = loadingView;
   if (!_contentView.contentHasAppeared) {
     [self showLoadingView];
   }
 }
 
-- (void)showLoadingView
-{
+- (void)showLoadingView {
   if (_loadingView && !_contentView.contentHasAppeared) {
     _loadingView.hidden = NO;
     [self addSubview:_loadingView];
@@ -149,8 +144,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 // 移除LoadingView
 // 带有动画
 // 不带动画
-- (void)hideLoadingView
-{
+- (void)hideLoadingView {
   if (_loadingView.superview == self && _contentView.contentHasAppeared) {
     if (_loadingViewFadeDuration > 0) {
       dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_loadingViewFadeDelay * NSEC_PER_SEC)),
@@ -172,21 +166,20 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
-- (void)javaScriptDidLoad:(NSNotification *)notification
-{
+- (void)javaScriptDidLoad:(NSNotification *)notification {
   RCTAssertMainThread();
   RCTBridge *bridge = notification.userInfo[@"bridge"];
   [self bundleFinishedLoading:bridge];
 }
 
-- (void)bundleFinishedLoading:(RCTBridge *)bridge
-{
+- (void)bundleFinishedLoading:(RCTBridge *)bridge {
   if (!bridge.valid) {
     return;
   }
 
   // JS加载完毕之后，重建ContentView
   // Cmd + R 之后界面立即刷新
+  // 刷新之后, ContentView删除，上面所有的View/ViewController都会被删除
   [_contentView removeFromSuperview];
   
   _contentView = [[RCTRootContentView alloc] initWithFrame:self.bounds bridge:bridge];
@@ -196,8 +189,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   [self runApplication:bridge];
 }
 
-- (void)runApplication:(RCTBridge *)bridge
-{
+- (void)runApplication:(RCTBridge *)bridge {
   NSString *moduleName = _moduleName ?: @"";
   NSDictionary *appParameters = @{
     @"rootTag": _contentView.reactTag,
@@ -212,8 +204,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
                    args:@[moduleName, appParameters]];
 }
 
-- (void)setSizeFlexibility:(RCTRootViewSizeFlexibility)sizeFlexibility
-{
+- (void)setSizeFlexibility:(RCTRootViewSizeFlexibility)sizeFlexibility {
   _sizeFlexibility = sizeFlexibility;
   [self setNeedsLayout];
 }

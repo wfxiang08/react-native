@@ -13,6 +13,9 @@
 #import "RCTFrameUpdate.h"
 #import "RCTInvalidating.h"
 
+//
+// RCTFrameUpdateObserver: 这个东西挺奇怪的?
+//
 @interface RCTTiming : NSObject <RCTBridgeModule, RCTInvalidating, RCTFrameUpdateObserver>
 
 @end

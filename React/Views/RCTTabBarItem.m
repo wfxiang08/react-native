@@ -13,20 +13,43 @@
 #import "RCTLog.h"
 #import "UIView+React.h"
 
+@interface UITabBarItemEx:UITabBarItem
+@end
+@implementation UITabBarItemEx
+-(void) setSelectedImage:(UIImage *)selectedImage {
+    selectedImage = [selectedImage imageWithRenderingMode: UIImageRenderingModeAlwaysOriginal];
+    [super setSelectedImage: selectedImage];
+}
+
+-(void) setImage:(UIImage *)image {
+    image = [image imageWithRenderingMode: UIImageRenderingModeAlwaysOriginal];
+    [super setImage: image];
+}
+
+@end
+
 @implementation RCTTabBarItem
 
 @synthesize barItem = _barItem;
 
-- (UITabBarItem *)barItem
-{
+
+// RCTTabBarItem 负责为TabBarViewController的controller提供tabBarItem
+- (UITabBarItem *)barItem {
   if (!_barItem) {
-    _barItem = [UITabBarItem new];
+    _barItem = [UITabBarItemEx new];
   }
   return _barItem;
 }
 
-- (void)setIcon:(id)icon
-{
+//
+// icon格式:
+// 1. @{
+//      json格式的数据
+// }
+// 2. NSString(系统图标)
+//
+- (void)setIcon:(id)icon {
+  // 1. 系统的Icon
   static NSDictionary *systemIcons;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
@@ -51,8 +74,11 @@
   _icon = [icon copy];
 
   // Check if string matches any custom images first
-  UIImage *image = [RCTConvert UIImage:_icon];
+  // 如何加载图片呢?
+  UIImage *image = [[RCTConvert UIImage:_icon] imageWithRenderingMode: UIImageRenderingModeAlwaysOriginal];
+  
   UITabBarItem *oldItem = _barItem;
+
   if (image) {
     // Recreate barItem if previous item was a system icon. Calling self.barItem
     // creates a new instance if it wasn't set yet.
@@ -76,14 +102,14 @@
   }
 
   // Reapply previous properties
+  // 只能修改: image, selectedImage似乎不能修改
   _barItem.title = oldItem.title;
   _barItem.imageInsets = oldItem.imageInsets;
   _barItem.selectedImage = oldItem.selectedImage;
   _barItem.badgeValue = oldItem.badgeValue;
 }
 
-- (UIViewController *)reactViewController
-{
+- (UIViewController *)reactViewController {
   return self.superview.reactViewController;
 }
 

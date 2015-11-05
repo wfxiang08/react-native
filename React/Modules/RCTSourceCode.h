@@ -12,7 +12,7 @@
 #import "RCTBridgeModule.h"
 
 @interface RCTSourceCode : NSObject <RCTBridgeModule>
-
+// 代码&URL
 @property (nonatomic, copy) NSData *scriptData;
 @property (nonatomic, copy) NSURL *scriptURL;
 
