@@ -257,12 +257,14 @@ var Navigator = React.createClass({
     sceneStyle: View.propTypes.style,
   },
 
+  // statics 可以直接通过类名访问
   statics: {
     BreadcrumbNavigationBar: NavigatorBreadcrumbNavigationBar,
     NavigationBar: NavigatorNavigationBar,
     SceneConfigs: NavigatorSceneConfigs,
   },
 
+  // 通过mixins可以直接获取它们的方法
   mixins: [TimerMixin, InteractionMixin, Subscribable.Mixin],
 
   getDefaultProps: function() {
@@ -1071,6 +1073,9 @@ var Navigator = React.createClass({
   },
 
   _renderNavigationBar: function() {
+    //
+    // this.props.navigationBar 什么时候定义的呢?
+    //
     if (!this.props.navigationBar) {
       return null;
     }

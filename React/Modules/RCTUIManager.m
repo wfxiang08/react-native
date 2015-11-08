@@ -33,8 +33,13 @@
 #import "RCTViewManager.h"
 #import "UIView+React.h"
 
-static void RCTTraverseViewNodes(id<RCTComponent> view, void (^block)(id<RCTComponent>))
-{
+//----------------------------------------------------------------------------------------------------------------------
+// 遍历: ViewNodes
+static void RCTTraverseViewNodes(id<RCTComponent> view, void (^block)(id<RCTComponent>)) {
+  // 基本上所有的View都是RCTComponent
+  //
+  // 什么样的View具有reactTag呢?
+  //
   if (view.reactTag) block(view);
   for (id<RCTComponent> subview in view.reactSubviews) {
     RCTTraverseViewNodes(subview, block);
@@ -46,6 +51,8 @@ NSString *const RCTUIManagerDidRegisterRootViewNotification = @"RCTUIManagerDidR
 NSString *const RCTUIManagerDidRemoveRootViewNotification = @"RCTUIManagerDidRemoveRootViewNotification";
 NSString *const RCTUIManagerRootViewKey = @"RCTUIManagerRootViewKey";
 
+
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTAnimation : NSObject
 
 @property (nonatomic, readonly) NSTimeInterval duration;
@@ -59,10 +66,11 @@ NSString *const RCTUIManagerRootViewKey = @"RCTUIManagerRootViewKey";
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTAnimation
 
-static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnimationType type)
-{
+// RCTAnimcationType像原生的转换
+static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnimationType type) {
   switch (type) {
     case RCTAnimationTypeLinear:
       return UIViewAnimationOptionCurveLinear;
@@ -81,8 +89,16 @@ static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnim
   }
 }
 
-- (instancetype)initWithDuration:(NSTimeInterval)duration dictionary:(NSDictionary *)config
-{
+/**
+ *
+   {
+      property: "",
+      duration: "",
+      delay: "",
+ * }
+ *
+ */
+- (instancetype)initWithDuration:(NSTimeInterval)duration dictionary:(NSDictionary *)config {
   if (!config) {
     return nil;
   }
@@ -114,10 +130,12 @@ static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnim
 }
 
 - (void)performAnimations:(void (^)(void))animations
-      withCompletionBlock:(void (^)(BOOL completed))completionBlock
-{
+      withCompletionBlock:(void (^)(BOOL completed))completionBlock {
+  // 如何执行动画呢?
   if (_animationType == RCTAnimationTypeSpring) {
-
+    // 两个重要的Block
+    // animations
+    // completionBlock
     [UIView animateWithDuration:_duration
                           delay:_delay
          usingSpringWithDamping:_springDamping
@@ -141,20 +159,24 @@ static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnim
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTLayoutAnimation : NSObject
 
 @property (nonatomic, copy) NSDictionary *config;
+
+// Layout相关的: 创建，删除, 更新
 @property (nonatomic, strong) RCTAnimation *createAnimation;
 @property (nonatomic, strong) RCTAnimation *updateAnimation;
 @property (nonatomic, strong) RCTAnimation *deleteAnimation;
+
 @property (nonatomic, copy) RCTResponseSenderBlock callback;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTLayoutAnimation
 
-- (instancetype)initWithDictionary:(NSDictionary *)config callback:(RCTResponseSenderBlock)callback
-{
+- (instancetype)initWithDictionary:(NSDictionary *)config callback:(RCTResponseSenderBlock)callback {
   if (!config) {
     return nil;
   }
@@ -177,6 +199,8 @@ static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnim
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTUIManager ()
 
 // NOTE: these are properties so that they can be accessed by unit tests
@@ -186,8 +210,8 @@ static UIViewAnimationOptions UIViewAnimationOptionsFromRCTAnimationType(RCTAnim
 
 @end
 
-@implementation RCTUIManager
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTUIManager {
   dispatch_queue_t _shadowQueue;
 
   // Root views are only mutated on the shadow queue
@@ -214,14 +238,14 @@ RCT_EXPORT_MODULE()
  */
 extern NSString *RCTBridgeModuleNameForClass(Class cls);
 
-- (instancetype)init
-{
+- (instancetype)init {
   if ((self = [super init])) {
 
     _shadowQueue = dispatch_queue_create("com.facebook.React.ShadowQueue", DISPATCH_QUEUE_SERIAL);
 
     _pendingUIBlocksLock = [NSLock new];
-
+    
+    // 两种ViewRegistry的区别?
     _shadowViewRegistry = [RCTSparseArray new];
     _viewRegistry = [RCTSparseArray new];
 
@@ -234,8 +258,10 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   return self;
 }
 
-- (void)didReceiveNewContentSizeMultiplier
-{
+- (void)didReceiveNewContentSizeMultiplier {
+  
+  // Accessibility变化了，例如: 字体要放大?
+  //
   __weak RCTUIManager *weakSelf = self;
   dispatch_async(self.methodQueue, ^{
     RCTUIManager *strongSelf = weakSelf;
@@ -247,13 +273,15 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   });
 }
 
-- (void)invalidate
-{
+- (void)invalidate {
   /**
    * Called on the JS Thread since all modules are invalidated on the JS thread
    */
-
+  //
+  // UIManager如何删除Views
+  //
   dispatch_async(dispatch_get_main_queue(), ^{
+    // 删除所有的 _viewRegistry
     for (NSNumber *rootViewTag in _rootViewTags) {
       [_viewRegistry[rootViewTag] invalidate];
     }
@@ -272,8 +300,11 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   });
 }
 
-- (void)setBridge:(RCTBridge *)bridge
-{
+//
+// 为什么要切换: bridge呢?
+//
+- (void)setBridge:(RCTBridge *)bridge {
+  
   RCTAssert(_bridge == nil, @"Should not re-use same UIIManager instance");
 
   _bridge = bridge;
@@ -282,12 +313,18 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   // Get view managers from bridge
   NSMutableDictionary *componentDataByName = [NSMutableDictionary new];
   for (RCTViewManager *manager in _bridge.modules.allValues) {
+    // 统管 views 目录下的所有的 View/ViewManager
+    // 通过遍历所有的Modulel来判断
+    //
+    // RCTSwitchManager --> RCTSwitch
+    //
     if ([manager isKindOfClass:[RCTViewManager class]]) {
       RCTComponentData *componentData = [[RCTComponentData alloc] initWithManager:manager];
       componentDataByName[componentData.name] = componentData;
     }
   }
 
+  // Mutable --> Immutable
   _componentDataByName = [componentDataByName copy];
 
   [[NSNotificationCenter defaultCenter] addObserver:self
@@ -296,13 +333,14 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
                                              object:_bridge.accessibilityManager];
 }
 
-- (dispatch_queue_t)methodQueue
-{
+- (dispatch_queue_t)methodQueue {
   return _shadowQueue;
 }
 
-- (void)registerRootView:(UIView *)rootView
-{
+//
+// 如何注册: RootView?
+//
+- (void)registerRootView:(UIView *)rootView {
   RCTAssertMainThread();
 
   NSNumber *reactTag = rootView.reactTag;
@@ -329,6 +367,7 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
     shadowView.frame = frame;
     shadowView.backgroundColor = rootView.backgroundColor;
     shadowView.viewName = NSStringFromClass([rootView class]);
+    
     strongSelf->_shadowViewRegistry[shadowView.reactTag] = shadowView;
     [strongSelf->_rootViewTags addObject:reactTag];
   });
@@ -338,8 +377,7 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
                                                     userInfo:@{ RCTUIManagerRootViewKey: rootView }];
 }
 
-- (UIView *)viewForReactTag:(NSNumber *)reactTag
-{
+- (UIView *)viewForReactTag:(NSNumber *)reactTag {
   RCTAssertMainThread();
   return _viewRegistry[reactTag];
 }
@@ -351,15 +389,17 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   // The following variable has no meaning if the view is not a react root view
   RCTRootViewSizeFlexibility sizeFlexibility = RCTRootViewSizeFlexibilityNone;
 
+  // reactTag 是如何生成的?
   if (RCTIsReactRootView(view.reactTag)) {
     RCTRootView *rootView = (RCTRootView *)[view superview];
     if (rootView != nil) {
       sizeFlexibility = rootView.sizeFlexibility;
     }
   }
-
+  
   NSNumber *reactTag = view.reactTag;
   dispatch_async(_shadowQueue, ^{
+    // 首先修改ShadowView, 然后再更新到 Render View
     RCTShadowView *rootShadowView = _shadowViewRegistry[reactTag];
     RCTAssert(rootShadowView != nil, @"Could not locate root view with tag #%@", reactTag);
 
@@ -369,15 +409,13 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
     } else {
       rootShadowView.frame = frame;
     }
-
     [rootShadowView updateLayout];
 
     [self batchDidComplete];
   });
 }
 
-- (void)setBackgroundColor:(UIColor *)color forRootView:(UIView *)rootView
-{
+- (void)setBackgroundColor:(UIColor *)color forRootView:(UIView *)rootView {
   RCTAssertMainThread();
 
   NSNumber *reactTag = rootView.reactTag;
@@ -392,6 +430,8 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
     RCTShadowView *rootShadowView = strongSelf->_shadowViewRegistry[reactTag];
     RCTAssert(rootShadowView != nil, @"Could not locate root view with tag #%@", reactTag);
     rootShadowView.backgroundColor = color;
+    
+    // 首先修改ShadowView, 然后再更新到 Render View
     [self _amendPendingUIBlocksWithStylePropagationUpdateForRootView:rootShadowView];
     [self flushUIBlocks];
   });
@@ -400,14 +440,16 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
 /**
  * Unregisters views from registries
  */
-- (void)_purgeChildren:(NSArray *)children fromRegistry:(RCTSparseArray *)registry
-{
+- (void)_purgeChildren:(NSArray *)children fromRegistry:(RCTSparseArray *)registry {
+
   for (id<RCTComponent> child in children) {
+    // 将它的所有的subview 进行invalidate
     RCTTraverseViewNodes(registry[child.reactTag], ^(id<RCTComponent> subview) {
       RCTAssert(![subview isReactRootView], @"Root views should not be unregistered");
       if ([subview conformsToProtocol:@protocol(RCTInvalidating)]) {
         [(id<RCTInvalidating>)subview invalidate];
       }
+      // 从registry中删除
       registry[subview.reactTag] = nil;
 
       if (registry == _viewRegistry) {
@@ -417,8 +459,7 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   }
 }
 
-- (void)addUIBlock:(RCTViewManagerUIBlock)block
-{
+- (void)addUIBlock:(RCTViewManagerUIBlock)block {
   RCTAssertThread(_shadowQueue,
                   @"-[RCTUIManager addUIBlock:] should only be called from the "
                   "UIManager's _shadowQueue (it may be accessed via `bridge.uiManager.methodQueue`)");
@@ -588,8 +629,7 @@ extern NSString *RCTBridgeModuleNameForClass(Class cls);
   };
 }
 
-- (void)_amendPendingUIBlocksWithStylePropagationUpdateForRootView:(RCTShadowView *)topView
-{
+- (void)_amendPendingUIBlocksWithStylePropagationUpdateForRootView:(RCTShadowView *)topView {
   NSMutableSet *applierBlocks = [NSMutableSet setWithCapacity:1];
   [topView collectUpdatedProperties:applierBlocks parentProperties:@{}];
 

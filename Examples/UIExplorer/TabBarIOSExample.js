@@ -15,9 +15,14 @@
  */
 'use strict';
 
+var ScrollViewExample = require('./ScrollViewExample');
+
+
 var React = require('react-native');
 var {
   Image,
+  PixelRatio,
+  TouchableHighlight,
   StyleSheet,
   TabBarIOS,
   Text,
@@ -25,9 +30,25 @@ var {
 } = React;
 
 
+
+var EmptyPage = React.createClass({
+
+  render: function() {
+    return (
+      <View style={styles.emptyPage}>
+        <Text style={styles.emptyPageText}>
+          我们哈哈哈 {this.props.text}
+        </Text>
+      </View>
+    );
+  },
+
+});
+
+
 var TabBarExample = React.createClass({
   statics: {
-    title: '春雨医生',
+    title: 'TabBarExample',
     description: 'Tab-based navigation.',
   },
 
@@ -35,7 +56,7 @@ var TabBarExample = React.createClass({
 
   getInitialState: function() {
     return {
-      selectedTab: 'redTab',
+      selectedTab: 'airTab',
       notifCount: 0,
       presses: 0,
     };
@@ -51,8 +72,37 @@ var TabBarExample = React.createClass({
         <Image source={require('image!btn_assistant_selected')} style={styles.imageDemo2} />
         <Image source={require('image!btn_assistant')} style={styles.imageDemo} />
         <Image source={require('image!btn_air_hospital_selected')} style={styles.imageDemo2} />
+        <TouchableHighlight style={styles.wrapper} onPress={() => {
+          // alert("Hello");
+          //this.props.navigator.push({
+          //    message: 'Came from jumping example',
+          //  });
+
+          this.props.navigator.push({
+            message: "测试",
+            component: EmptyPage,
+            rightButtonTitle: '取消',
+            onRightButtonPress: () => this.props.navigator.pop(),
+            passProps: {
+              text: 'This page has a right button in the nav bar',
+            }
+          });
+          }
+        }>
+            <Text style={styles.tabText}>{pageText}</Text>
+          </TouchableHighlight>
+
       </View>
     );
+  },
+
+  open_demo: function() {
+    // onLongPress={this.open_demo()}
+    alert("Hello");
+    //this.props.navigator.push({
+    //    title: "测试",
+    //    component: ScrollViewExample,
+    //});
   },
   // 4dd363 FF0000
   // badge={this.state.notifCount > 0 ? this.state.notifCount : undefined}
@@ -156,6 +206,40 @@ var styles = StyleSheet.create({
     height: 43,
     width: 49,
   },
+  emptyPage: {
+    flex: 1,
+    paddingTop: 64,
+  },
+  emptyPageText: {
+    margin: 10,
+  },
+   logBox: {
+    padding: 20,
+    margin: 10,
+    borderWidth: 1 / PixelRatio.get(),
+    borderColor: '#f0f0f0',
+    backgroundColor: '#f9f9f9',
+  },
+  eventLogBox: {
+    padding: 10,
+    margin: 10,
+    height: 120,
+    borderWidth: 1 / PixelRatio.get(),
+    borderColor: '#f0f0f0',
+    backgroundColor: '#f9f9f9',
+  },
+  textBlock: {
+    fontWeight: '500',
+    color: 'blue',
+  },
+    wrapper: {
+    borderRadius: 8,
+  },
+  wrapperCustom: {
+    borderRadius: 8,
+    padding: 6,
+  },
 });
+
 
 module.exports = TabBarExample;

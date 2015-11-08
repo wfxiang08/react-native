@@ -20,6 +20,8 @@ var React = require('react-native');
 var UIExplorerList = require('./UIExplorerList.ios');
 
 var TabBarExample = require("./TabBarIOSExample")
+
+// 从: React中导入 NavigatorIOS
 var {
   AppRegistry,
   NavigatorIOS,
@@ -51,7 +53,8 @@ var UIExplorerApp = React.createClass({
         style={styles.container}
         initialRoute={{
           title: '春雨医生',
-          component: TabBarExample, //, UIExplorerList,
+          component: UIExplorerList,
+          // component: TabBarExample,
           passProps: {
             onExternalExampleRequested: (example) => {
               this.setState({ openExternalExample: example, });

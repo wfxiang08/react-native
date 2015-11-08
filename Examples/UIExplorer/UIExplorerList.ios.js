@@ -144,6 +144,7 @@ class UIExplorerList extends React.Component {
       this.props.onExternalExampleRequested(example);
       return;
     }
+    //alert(example);
 
     var Component = UIExplorerListBase.makeRenderable(example);
     this.props.navigator.push({

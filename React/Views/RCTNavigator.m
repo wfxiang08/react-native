@@ -32,17 +32,17 @@ NSInteger kNeverProgressed = -10000;
 
 
 @interface UINavigationController ()
-
+// 如何暴露一个私有的方法
 // need to declare this since `UINavigationController` doesnt publicly declare the fact that it implements
 // UINavigationBarDelegate :(
 - (BOOL)navigationBar:(UINavigationBar *)navigationBar shouldPopItem:(UINavigationItem *)item;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 // http://stackoverflow.com/questions/5115135/uinavigationcontroller-how-to-cancel-the-back-button-event
 // There's no other way to do this unfortunately :(
-@interface RCTNavigationController : UINavigationController <UINavigationBarDelegate>
-{
+@interface RCTNavigationController : UINavigationController <UINavigationBarDelegate> {
   dispatch_block_t _scrollCallback;
 }
 
@@ -50,6 +50,7 @@ NSInteger kNeverProgressed = -10000;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * In general, `RCTNavigator` examines `_currentViews` (which are React child
  * views), and compares them to `_navigationController.viewControllers` (which
@@ -138,8 +139,7 @@ NSInteger kNeverProgressed = -10000;
  * @param callback Callback that is invoked when a "scroll" interaction begins
  * so that `RCTNavigator` can notify `JavaScript`.
  */
-- (instancetype)initWithScrollCallback:(dispatch_block_t)callback
-{
+- (instancetype)initWithScrollCallback:(dispatch_block_t)callback {
   if ((self = [super initWithNibName:nil bundle:nil])) {
     _scrollCallback = callback;
   }
@@ -153,8 +153,7 @@ NSInteger kNeverProgressed = -10000;
  * completely disable the gesture recognizer for swipe-back while JS has the
  * lock.
  */
-- (BOOL)navigationBar:(UINavigationBar *)navigationBar shouldPopItem:(UINavigationItem *)item
-{
+- (BOOL)navigationBar:(UINavigationBar *)navigationBar shouldPopItem:(UINavigationItem *)item {
   if (self.interactivePopGestureRecognizer.state == UIGestureRecognizerStateBegan) {
     if (self.navigationLock == RCTNavigationLockNone) {
       self.navigationLock = RCTNavigationLockNative;
@@ -191,6 +190,7 @@ NSInteger kNeverProgressed = -10000;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTNavigator() <RCTWrapperViewControllerNavigationListener, UINavigationControllerDelegate>
 
 @property (nonatomic, copy) RCTDirectEventBlock onNavigationProgress;
@@ -262,8 +262,8 @@ NSInteger kNeverProgressed = -10000;
 
 @end
 
-@implementation RCTNavigator
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTNavigator {
   __weak RCTBridge *_bridge;
   NSInteger _numberOfViewControllerMovesToIgnore;
 }
@@ -271,8 +271,10 @@ NSInteger kNeverProgressed = -10000;
 @synthesize paused = _paused;
 @synthesize pauseCallback = _pauseCallback;
 
-- (instancetype)initWithBridge:(RCTBridge *)bridge
-{
+//
+// 所有的RCT控件都必须带有 bridge
+//
+- (instancetype)initWithBridge:(RCTBridge *)bridge {
   RCTAssertParam(bridge);
 
   if ((self = [super initWithFrame:CGRectZero])) {
@@ -282,6 +284,7 @@ NSInteger kNeverProgressed = -10000;
     _mostRecentProgress = kNeverProgressed;
     _dummyView = [[UIView alloc] initWithFrame:CGRectZero];
     _previousRequestedTopOfStack = kNeverRequested; // So that we initialize with a push.
+
     _previousViews = @[];
     _currentViews = [[NSMutableArray alloc] initWithCapacity:0];
     
@@ -293,22 +296,30 @@ NSInteger kNeverProgressed = -10000;
     
     RCTAssert([self requestSchedulingJavaScriptNavigation], @"Could not acquire JS navigation lock on init");
 
+    // 自己带有: NavigationController
     [self addSubview:_navigationController.view];
+    
+    // DummyView的作用?
     [_navigationController.view addSubview:_dummyView];
   }
   return self;
 }
 
+// 禁用其他的初始化接口
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update
-{
+//
+// 处理动画
+//
+- (void)didUpdateFrame:(__unused RCTFrameUpdate *)update {
   if (_currentlyTransitioningFrom != _currentlyTransitioningTo) {
+    
     UIView *topView = _dummyView;
     id presentationLayer = [topView.layer presentationLayer];
     CGRect frame = [presentationLayer frame];
     CGFloat nextProgress = ABS(frame.origin.x);
+    
     // Don't want to spam the bridge, when the user holds their finger still mid-navigation.
     if (nextProgress == _mostRecentProgress) {
       return;
@@ -324,8 +335,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
-- (void)setPaused:(BOOL)paused
-{
+- (void)setPaused:(BOOL)paused {
   if (_paused != paused) {
     _paused = paused;
     if (_pauseCallback) {
@@ -334,13 +344,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
-- (void)dealloc
-{
+- (void)dealloc {
   _navigationController.delegate = nil;
 }
 
-- (UIViewController *)reactViewController
-{
+- (UIViewController *)reactViewController {
   return _navigationController;
 }
 
@@ -351,17 +359,15 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
  */
 - (void)navigationController:(UINavigationController *)navigationController
       willShowViewController:(__unused UIViewController *)viewController
-                    animated:(__unused BOOL)animated
-{
-  id<UIViewControllerTransitionCoordinator> tc =
-    navigationController.topViewController.transitionCoordinator;
+                    animated:(__unused BOOL)animated {
+  
+  id<UIViewControllerTransitionCoordinator> tc = navigationController.topViewController.transitionCoordinator;
+
   __weak RCTNavigator *weakSelf = self;
   [tc.containerView addSubview: _dummyView];
   [tc animateAlongsideTransition: ^(id<UIViewControllerTransitionCoordinatorContext> context) {
-    RCTWrapperViewController *fromController =
-      (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextFromViewControllerKey];
-    RCTWrapperViewController *toController =
-      (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextToViewControllerKey];
+    RCTWrapperViewController *fromController = (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextFromViewControllerKey];
+    RCTWrapperViewController *toController =   (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextToViewControllerKey];
     NSUInteger indexOfFrom = [_currentViews indexOfObject:fromController.navItem];
     NSUInteger indexOfTo = [_currentViews indexOfObject:toController.navItem];
     CGFloat destination = indexOfFrom < indexOfTo ? 1.0 : -1.0;
@@ -380,8 +386,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }];
 }
 
-- (BOOL)requestSchedulingJavaScriptNavigation
-{
+- (BOOL)requestSchedulingJavaScriptNavigation {
   if (_navigationController.navigationLock == RCTNavigationLockNone) {
     _navigationController.navigationLock = RCTNavigationLockJavaScript;
     _navigationController.interactivePopGestureRecognizer.enabled = NO;
@@ -390,8 +395,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   return NO;
 }
 
-- (void)freeLock
-{
+- (void)freeLock {
   _navigationController.navigationLock = RCTNavigationLockNone;
   _navigationController.interactivePopGestureRecognizer.enabled = YES;
 }

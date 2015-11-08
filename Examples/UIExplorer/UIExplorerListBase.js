@@ -28,16 +28,19 @@ var {
 
 var createExamplePage = require('./createExamplePage');
 
+// 这是什么意思呢?
 var ds = new ListView.DataSource({
   rowHasChanged: (r1, r2) => r1 !== r2,
   sectionHeaderHasChanged: (h1, h2) => h1 !== h2,
 });
 
+// 变量名后面有Class名字，是通过Facebook flow来实现的
 class UIExplorerListBase extends React.Component {
   constructor(props: any) {
     super(props);
 
     this.state = {
+      // Section的Key, Values
       dataSource: ds.cloneWithRowsAndSections({
         components: [],
         apis: [],
@@ -47,6 +50,7 @@ class UIExplorerListBase extends React.Component {
   }
 
   componentDidMount(): void {
+    // 在DOM添加完毕之后，获取有效的数据
     this.search(this.state.searchText);
   }
 
@@ -55,6 +59,9 @@ class UIExplorerListBase extends React.Component {
     var topView = this.props.renderAdditionalView &&
       this.props.renderAdditionalView(this.renderRow.bind(this), this.renderTextInput.bind(this));
 
+    //
+    // 通过一般的 ListView来展示界面
+    //
     return (
       <View style={styles.listContainer}>
         {topView}

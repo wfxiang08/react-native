@@ -683,6 +683,7 @@ var TouchableMixin = {
 
 };
 
+// Mixin 似乎和继承比较类似，新的类有TouchableMixin的所有接口
 var Touchable = {
   Mixin: TouchableMixin
 };

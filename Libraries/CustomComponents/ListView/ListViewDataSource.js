@@ -32,6 +32,10 @@ var invariant = require('invariant');
 var isEmpty = require('isEmpty');
 var warning = require('warning');
 
+//
+// 从一个dataBlob中如何获取数据呢?
+// 默认的实现是一个二维数组
+//
 function defaultGetRowData(
   dataBlob: any,
   sectionID: number | string,
@@ -40,6 +44,9 @@ function defaultGetRowData(
   return dataBlob[sectionID][rowID];
 }
 
+//
+// 如何获取SectionHeaderData呢?
+//
 function defaultGetSectionHeaderData(
   dataBlob: any,
   sectionID: number | string
@@ -47,8 +54,15 @@ function defaultGetSectionHeaderData(
   return dataBlob[sectionID];
 }
 
+//
+// 什么是Diff呢?
+// 两个数据 --> bool
+//
 type differType = (data1: any, data2: any) => bool;
 
+//
+// ParamType的意义?
+//
 type ParamType = {
   rowHasChanged: differType;
   getRowData: ?typeof defaultGetRowData;
@@ -118,15 +132,19 @@ class ListViewDataSource {
    * - sectionHeaderHasChanged(prevSectionData, nextSectionData);
    */
   constructor(params: ParamType) {
+    //
+    // 所谓invariant是指这些必须保持不变，ASSERT(True)
+    //
     invariant(
       params && typeof params.rowHasChanged === 'function',
       'Must provide a rowHasChanged function.'
     );
+
+    // 首先确定ParamType中的函数设置OK
     this._rowHasChanged = params.rowHasChanged;
     this._getRowData = params.getRowData || defaultGetRowData;
     this._sectionHeaderHasChanged = params.sectionHeaderHasChanged;
-    this._getSectionHeaderData =
-      params.getSectionHeaderData || defaultGetSectionHeaderData;
+    this._getSectionHeaderData = params.getSectionHeaderData || defaultGetSectionHeaderData;
 
     this._dataBlob = null;
     this._dirtyRows = [];
@@ -159,6 +177,8 @@ class ListViewDataSource {
        dataBlob: Array<any> | {[key: string]: any},
        rowIdentities: ?Array<string>
    ): ListViewDataSource {
+
+    // 似乎只有一个Section, 那么永远都不会有SectionHasChanged发生
     var rowIds = rowIdentities ? [rowIdentities] : null;
     if (!this._sectionHeaderHasChanged) {
       this._sectionHeaderHasChanged = () => false;
@@ -186,28 +206,44 @@ class ListViewDataSource {
       typeof this._sectionHeaderHasChanged === 'function',
       'Must provide a sectionHeaderHasChanged function with section data.'
     );
+
+    // dataBlob
+    // sectionIdentities 的关系
+    // 1. 构建新的dataSource
     var newSource = new ListViewDataSource({
       getRowData: this._getRowData,
       getSectionHeaderData: this._getSectionHeaderData,
       rowHasChanged: this._rowHasChanged,
       sectionHeaderHasChanged: this._sectionHeaderHasChanged,
     });
+
+    // 2. 设置数据
     newSource._dataBlob = dataBlob;
+
+    // 3. 如何获取 sectionIdenties(要么单独指定，要么为keys)
     if (sectionIdentities) {
       newSource.sectionIdentities = sectionIdentities;
     } else {
       newSource.sectionIdentities = Object.keys(dataBlob);
     }
+
+    // 4. rowIdenties 要么单独指定
+    //    要么
     if (rowIdentities) {
       newSource.rowIdentities = rowIdentities;
     } else {
       newSource.rowIdentities = [];
       newSource.sectionIdentities.forEach((sectionID) => {
+        // 如果是dict, 好说
+        // 如果是array, 则keys为下标
         newSource.rowIdentities.push(Object.keys(dataBlob[sectionID]));
       });
     }
+
+    // 计算所有的Rows的数量
     newSource._cachedRowCount = countRows(newSource.rowIdentities);
 
+    // 构建新的Source, 并且将现有的数据和新的数据进行对比，标记dirty
     newSource._calculateDirtyArrays(
       this._dataBlob,
       this.sectionIdentities,
@@ -235,6 +271,10 @@ class ListViewDataSource {
    * Gets the data required to render the row.
    */
   getRowData(sectionIndex: number, rowIndex: number): any {
+    //
+    // sectionIndex, rowIndex可能会因为数据的添加删除而发生变化；但是 sectionID, rowID则可能更多地是和数据保持一致
+    // sectionID， rowID 是什么概念呢?
+    //
     var sectionID = this.sectionIdentities[sectionIndex];
     var rowID = this.rowIdentities[sectionIndex][rowIndex];
     warning(
@@ -249,6 +289,7 @@ class ListViewDataSource {
    * or null of out of range indexes.
    */
   getRowIDForFlatIndex(index: number): ?string {
+    // rowID是什么概念呢?
     var accessIndex = index;
     for (var ii = 0; ii < this.sectionIdentities.length; ii++) {
       if (accessIndex >= this.rowIdentities[ii].length) {
@@ -312,8 +353,8 @@ class ListViewDataSource {
 
   /**
    * Private members and methods.
+   * 定义私有的变量
    */
-
   _getRowData: typeof defaultGetRowData;
   _getSectionHeaderData: typeof defaultGetSectionHeaderData;
   _rowHasChanged: differType;
@@ -334,6 +375,12 @@ class ListViewDataSource {
     prevSectionIDs: Array<string>,
     prevRowIDs: Array<Array<string>>
   ): void {
+    // 工作模式:
+    // 1. 构建新的DataSource, 并且新的DataSource已经有了新的数据
+    // 2. 现有的数据, 通过参数传入和新的Datasource中的数据进行比较，然后计算出Diff
+    //
+
+    // 1. 为就的数据建立Hash(SectionHash, RowHash)
     // construct a hashmap of the existing (old) id arrays
     var prevSectionsHash = keyedDictionaryFromArray(prevSectionIDs);
     var prevRowsHash = {};
@@ -351,23 +398,33 @@ class ListViewDataSource {
     this._dirtyRows = [];
 
     var dirty;
+    // 2. 遍历新的数据
     for (var sIndex = 0; sIndex < this.sectionIdentities.length; sIndex++) {
       var sectionID = this.sectionIdentities[sIndex];
       // dirty if the sectionHeader is new or _sectionHasChanged is true
+      // 1. 如果新的数据存在，但是就的数据不存在，那么认为是Dirty
+      //    新的数据不存在，但是旧的数据存在，那么也认为是Dirty
       dirty = !prevSectionsHash[sectionID];
+
       var sectionHeaderHasChanged = this._sectionHeaderHasChanged;
+      // 2. 如果sectionId存在，则通过sectionHeaderHasChanged来判断
       if (!dirty && sectionHeaderHasChanged) {
         dirty = sectionHeaderHasChanged(
           this._getSectionHeaderData(prevDataBlob, sectionID),
           this._getSectionHeaderData(this._dataBlob, sectionID)
         );
       }
+
+      // 记录sections的变化
       this._dirtySections.push(!!dirty);
 
       this._dirtyRows[sIndex] = [];
       for (var rIndex = 0; rIndex < this.rowIdentities[sIndex].length; rIndex++) {
         var rowID = this.rowIdentities[sIndex][rIndex];
         // dirty if the section is new, row is new or _rowHasChanged is true
+        // Row什么情况下认为变化了
+        // 对应的Section为新的; 或者对应的RowId为新的; 或者内容变化了
+        // 注意: RowId最好不要使用Index, 否则容易出现问题
         dirty =
           !prevSectionsHash[sectionID] ||
           !prevRowsHash[sectionID][rowID] ||
@@ -378,9 +435,13 @@ class ListViewDataSource {
         this._dirtyRows[sIndex].push(!!dirty);
       }
     }
+    // 新的sectionId不存在，但是在旧的数据中存在，那么如何处理呢?
   }
 }
 
+//
+// 二维数组: 统计所有二维数组的长度之和
+//
 function countRows(allRowIDs) {
   var totalRows = 0;
   for (var sectionIdx = 0; sectionIdx < allRowIDs.length; sectionIdx++) {
@@ -390,6 +451,10 @@ function countRows(allRowIDs) {
   return totalRows;
 }
 
+//
+// 将Array变成Dictionary
+//      item --> true
+//
 function keyedDictionaryFromArray(arr) {
   if (isEmpty(arr)) {
     return {};

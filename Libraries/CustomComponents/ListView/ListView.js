@@ -25,8 +25,12 @@
  * @providesModule ListView
  */
 'use strict';
-
+//
+// 首先引入: DataSource
+// DataSource 的结构，常见操作
+//
 var ListViewDataSource = require('ListViewDataSource');
+
 var React = require('React');
 var RCTUIManager = require('NativeModules').UIManager;
 var RCTScrollViewManager = require('NativeModules').ScrollViewManager;
@@ -52,6 +56,9 @@ var SCROLLVIEW_REF = 'listviewscroll';
 /**
  * ListView - A core component designed for efficient display of vertically
  * scrolling lists of changing data.  The minimal API is to create a
+ * 1. 最小的API就是构建一个DataSource, 通过Data Blobs来填充
+ * 2. 然后构建一个ListView
+ * 3. 再实现RenderRow
  * `ListView.DataSource`, populate it with a simple array of data blobs, and
  * instantiate a `ListView` component with that data source and a `renderRow`
  * callback which takes a blob from the data array and returns a renderable
@@ -61,6 +68,7 @@ var SCROLLVIEW_REF = 'listviewscroll';
  *
  * ```
  * getInitialState: function() {
+ *   每次需要改变数据的时候，都通过cloneWithRows, cloneWithRowsAndSections 来是实现数据的更新
  *   var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
  *   return {
  *     dataSource: ds.cloneWithRows(['row 1', 'row 2']),

@@ -14,6 +14,11 @@
 #import "RCTInvalidating.h"
 #import "RCTViewManager.h"
 
+// 最复杂的一个类
+// 它统管所有的Views目录下的类，例如: RCTSwitch, RCTSwitchManager
+// 具体是如何管理的呢?
+//
+
 /**
  * Posted right before re-render happens. This is a chance for views to invalidate their state so
  * next render cycle will pick up updated views and layout appropriately.
@@ -37,8 +42,11 @@ RCT_EXTERN NSString *const RCTUIManagerDidRemoveRootViewNotification;
  */
 RCT_EXTERN NSString *const RCTUIManagerRootViewKey;
 
+//----------------------------------------------------------------------------------------------------------------------
 @protocol RCTScrollableProtocol;
 
+
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * The RCTUIManager is the module responsible for updating the view hierarchy.
  */
@@ -92,6 +100,7 @@ RCT_EXTERN NSString *const RCTUIManagerRootViewKey;
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * This category makes the current RCTUIManager instance available via the
  * RCTBridge, which is useful for RCTBridgeModules or RCTViewManagers that
@@ -99,6 +108,7 @@ RCT_EXTERN NSString *const RCTUIManagerRootViewKey;
  */
 @interface RCTBridge (RCTUIManager)
 
+// 通过Category, 新的property像plugin一样添加到RCTBridge中
 @property (nonatomic, readonly) RCTUIManager *uiManager;
 
 @end

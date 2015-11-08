@@ -23,6 +23,7 @@
 
 typedef void (^RCTViewManagerUIBlock)(RCTUIManager *uiManager, RCTSparseArray *viewRegistry);
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTViewManager : NSObject <RCTBridgeModule>
 
 /**

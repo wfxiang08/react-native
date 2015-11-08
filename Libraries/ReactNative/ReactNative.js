@@ -76,7 +76,9 @@ var render = function(
   mountInto: number,
   callback?: ?(() => void)
 ): ?ReactComponent {
+
   return ReactNativeMount.renderComponent(element, mountInto, callback);
+
 };
 
 var ReactNative = {

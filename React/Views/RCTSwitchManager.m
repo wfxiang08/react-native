@@ -14,12 +14,15 @@
 #import "RCTSwitch.h"
 #import "UIView+React.h"
 
+/**
+ * 这个是如何工作的呢?
+ * <RCTSwitch {...this.props} ref={SWITCH} onChange={this._onChange} style={[styles.rkSwitch, this.props.style]} />
+ */
 @implementation RCTSwitchManager
 
 RCT_EXPORT_MODULE()
 
-- (UIView *)view
-{
+- (UIView *)view {
   RCTSwitch *switcher = [RCTSwitch new];
   [switcher addTarget:self
                action:@selector(onChange:)
@@ -27,8 +30,7 @@ RCT_EXPORT_MODULE()
   return switcher;
 }
 
-- (void)onChange:(RCTSwitch *)sender
-{
+- (void)onChange:(RCTSwitch *)sender {
   if (sender.wasOn != sender.on) {
     if (sender.onChange) {
       sender.onChange(@{ @"value": @(sender.on) });
@@ -36,6 +38,8 @@ RCT_EXPORT_MODULE()
     sender.wasOn = sender.on;
   }
 }
+
+// + (NSArray *)propConfig_onTintColor { return @[@"UIColor"]; }
 
 RCT_EXPORT_VIEW_PROPERTY(onTintColor, UIColor);
 RCT_EXPORT_VIEW_PROPERTY(tintColor, UIColor);

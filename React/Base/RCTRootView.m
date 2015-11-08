@@ -248,8 +248,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
-- (NSNumber *)reactTag
-{
+- (NSNumber *)reactTag {
   return _contentView.reactTag;
 }
 

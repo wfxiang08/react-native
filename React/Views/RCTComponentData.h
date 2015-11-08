@@ -15,6 +15,7 @@
 @class RCTShadowView;
 @class RCTViewManager;
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTComponentData : NSObject
 
 @property (nonatomic, copy, readonly) NSString *name;

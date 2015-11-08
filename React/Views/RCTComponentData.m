@@ -18,6 +18,7 @@
 
 typedef void (^RCTPropBlock)(id<RCTComponent> view, id json);
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTComponentProp : NSObject
 
 @property (nonatomic, copy, readonly) NSString *type;
@@ -37,6 +38,7 @@ typedef void (^RCTPropBlock)(id<RCTComponent> view, id json);
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTComponentData
 {
   id<RCTComponent> _defaultView;
@@ -54,6 +56,8 @@ typedef void (^RCTPropBlock)(id<RCTComponent> view, id json);
 
     _name = RCTBridgeModuleNameForClass([manager class]);
     RCTAssert(_name.length, @"Invalid moduleName '%@'", _name);
+
+    // RCTSwitchManager ---> RCTSwitch, 这样就可以识别对应的标签, <RCTSwitch .../>
     if ([_name hasSuffix:@"Manager"]) {
       _name = [_name substringToIndex:_name.length - @"Manager".length];
     }
@@ -67,8 +71,14 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 {
   RCTAssertMainThread();
 
+  // 工厂函数
+  // <RCTSwitch .../> --> RCTSwitch
+  //
   id<RCTComponent> view = (id<RCTComponent>)(props ? [_manager viewWithProps:props] : [_manager view]);
   view.reactTag = tag;
+  
+  
+  // 保证所有的View都能....
   if ([view isKindOfClass:[UIView class]]) {
     ((UIView *)view).multipleTouchEnabled = YES;
     ((UIView *)view).userInteractionEnabled = YES; // required for touch handling
@@ -79,6 +89,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 - (RCTShadowView *)createShadowViewWithTag:(NSNumber *)tag
 {
+  // ShadowView: 和样式是分离的
   RCTShadowView *shadowView = [_manager shadowView];
   shadowView.reactTag = tag;
   shadowView.viewName = _name;

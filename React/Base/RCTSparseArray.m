@@ -69,6 +69,7 @@
   if (obj) {
     _storage[key] = obj;
   } else {
+    // 如果value为NULL, 则直接从Dict中删除
     [_storage removeObjectForKey:key];
   }
 }

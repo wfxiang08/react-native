@@ -10,5 +10,5 @@
  * @flow
  */
 'use strict';
-
+// 基本上是: ReactNative的Alias
 module.exports = require('ReactNative');

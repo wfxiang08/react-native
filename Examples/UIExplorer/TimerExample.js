@@ -16,12 +16,14 @@
 'use strict';
 
 var React = require('react-native');
+
 var {
   AlertIOS,
   Platform,
   ToastAndroid,
   View,
 } = React;
+
 var TimerMixin = require('react-timer-mixin');
 var UIExplorerButton = require('./UIExplorerButton');
 

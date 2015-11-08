@@ -636,6 +636,8 @@ var NavigatorIOS = React.createClass({
     // computation of navigator children.
     var items = shouldRecurseToNavigator ?
       this.state.routeStack.map(this._routeToStackItem) : null;
+
+
     return (
       <StaticContainer shouldUpdate={shouldRecurseToNavigator}>
         <NavigatorTransitionerIOS
@@ -651,6 +653,7 @@ var NavigatorIOS = React.createClass({
   },
 
   render: function() {
+    // Navigator是如何Render的呢?
     return (
       <View style={this.props.style}>
         {this.renderNavigationStackItems()}
@@ -674,6 +677,7 @@ var styles = StyleSheet.create({
   },
 });
 
+// 这是什么意思呢?
 var RCTNavigator = requireNativeComponent('RCTNavigator');
 var RCTNavigatorItem = requireNativeComponent('RCTNavItem');
 

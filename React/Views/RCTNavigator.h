@@ -13,6 +13,7 @@
 
 @class RCTBridge;
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTNavigator : UIView <RCTFrameUpdateObserver>
 
 @property (nonatomic, strong) UIView *reactNavSuperviewLink;
