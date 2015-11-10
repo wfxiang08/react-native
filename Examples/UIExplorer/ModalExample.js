@@ -87,10 +87,18 @@ var ModalExample = React.createClass({
     var modalBackgroundStyle = {
       backgroundColor: this.state.transparent ? 'rgba(0, 0, 0, 0.5)' : '#f5fcff',
     };
+    // 不透明情况下，内部的View内容直接居中
     var innerContainerTransparentStyle = this.state.transparent
       ? {backgroundColor: '#fff', padding: 20}
-      : null;
+      : {backgroundColor: '#f00'};
 
+
+    // 正常的界面:
+    // 两个控件 + 一个按钮
+    // Modal默认情况下不可见
+    //
+    // Modal的两个状态
+    //
     return (
       <View>
         <Modal
@@ -108,6 +116,7 @@ var ModalExample = React.createClass({
             </View>
           </View>
         </Modal>
+
 
         <View style={styles.row}>
           <Text style={styles.rowTitle}>Animated</Text>
@@ -136,11 +145,13 @@ exports.examples = [
 ];
 
 var styles = StyleSheet.create({
+  // 外部容器的样式, 内容居中
   container: {
     flex: 1,
     justifyContent: 'center',
     padding: 20,
   },
+  // 内容居中
   innerContainer: {
     borderRadius: 10,
     alignItems: 'center',

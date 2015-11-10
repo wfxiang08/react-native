@@ -13,6 +13,7 @@
 #import "RCTLog.h"
 #import "UIView+React.h"
 
+// Hacked by Wangfei(图片的属性需要进一步控制，例如: 如果缩放，不合理的缩放会产生很多问题)
 @interface UITabBarItemEx:UITabBarItem
 @end
 @implementation UITabBarItemEx

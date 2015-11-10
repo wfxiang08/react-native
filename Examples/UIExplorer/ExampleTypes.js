@@ -16,6 +16,9 @@
  */
 'use strict';
 
+// 两个类型:
+// Example, renderable？
+// 定义类类型
 export type Example = {
   title: string,
   /* $FlowFixMe(>=0.16.0) */
@@ -24,6 +27,7 @@ export type Example = {
   platform?: string;
 };
 
+// 包含多个Example的Module对象， 但是不是renderable的
 export type ExampleModule = {
   title: string;
   description: string;

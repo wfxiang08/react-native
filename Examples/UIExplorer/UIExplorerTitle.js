@@ -25,10 +25,11 @@ var {
 
 var UIExplorerTitle = React.createClass({
   render: function() {
+    // 默认全屏
     return (
       <View style={styles.container}>
         <Text style={styles.text}>
-          {this.props.title}
+          {this.props.title} 标题
         </Text>
       </View>
     );
@@ -44,7 +45,7 @@ var styles = StyleSheet.create({
     marginBottom: 0,
     height: 45,
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: 'red', // 'white'
   },
   text: {
     fontSize: 19,

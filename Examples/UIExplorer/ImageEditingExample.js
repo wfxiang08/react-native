@@ -47,6 +47,9 @@ type TransformData = {
   size: ImageSize;
 }
 
+//
+// 如何实现ImageCropper呢?
+//
 class SquareImageCropper extends React.Component {
   _isMounted: boolean;
   _transformData: TransformData;
@@ -82,6 +85,7 @@ class SquareImageCropper extends React.Component {
   }
 
   componentWillUnmount() {
+    // 如果已经不再DOM中了，则不再处理:
     this._isMounted = false;
   }
 
@@ -91,6 +95,7 @@ class SquareImageCropper extends React.Component {
         <View
           style={styles.container}
           onLayout={(event) => {
+            // 这个取决于UI吗?
             var measuredWidth = event.nativeEvent.layout.width;
             if (!measuredWidth) {
               return;
@@ -103,13 +108,16 @@ class SquareImageCropper extends React.Component {
       );
     }
 
+    // 如果没有剪切好图片，则展示Cropper
     if (!this.state.croppedImageURI) {
       return this._renderImageCropper();
+    } else {
+      return this._renderCroppedImage();
     }
-    return this._renderCroppedImage();
   }
 
   _renderImageCropper() {
+    // 如果没有图片，则展示一个空的Container
     if (!this.state.randomPhoto) {
       return (
         <View style={styles.container} />
@@ -281,8 +289,12 @@ exports.examples = [{
 
 var styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignSelf: 'stretch',
+    //flex: 1,
+    width:320,
+    height:400,
+    borderWidth:0.5,
+    borderColor:'#0000FF',
+    // alignSelf: 'stretch',
   },
   imageCropper: {
     alignSelf: 'center',

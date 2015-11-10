@@ -21,6 +21,7 @@ var {
   StyleSheet,
   Text,
   TouchableHighlight,
+  TouchableOpacity,
 } = React;
 var BreadcrumbNavSample = require('./BreadcrumbNavSample');
 var NavigationBarSample = require('./NavigationBarSample');
@@ -28,6 +29,7 @@ var JumpingNavSample = require('./JumpingNavSample');
 
 class NavButton extends React.Component {
   render() {
+    // onPress: 只是传递一个Handler, 而不是一个func call
     return (
       <TouchableHighlight
         style={styles.button}
@@ -43,7 +45,8 @@ class NavMenu extends React.Component {
   render() {
     return (
       <ScrollView style={styles.scene}>
-        <Text style={styles.messageText}>{this.props.message}</Text>
+        <Text style={styles.messageText}>NavigatorExample: {this.props.message}</Text>
+
         <NavButton
           onPress={() => {
             this.props.navigator.push({
@@ -51,7 +54,7 @@ class NavMenu extends React.Component {
               sceneConfig: Navigator.SceneConfigs.FloatFromRight,
             });
           }}
-          text="Float in from right"
+          text="从右边往左边弹出"
         />
         <NavButton
           onPress={() => {
@@ -76,6 +79,7 @@ class NavMenu extends React.Component {
         />
         <NavButton
           onPress={() => {
+            // 这个Example和下面一个有什么差别呢?
             this.props.navigator.push({ id: 'navbar' });
           }}
           text="Navbar Example"
@@ -103,6 +107,61 @@ class NavMenu extends React.Component {
   }
 }
 
+var NavigationBarRouteMapper = {
+  onExampleExit: null,
+  LeftButton: function(route, navigator, index, navState) {
+    console.log("index: " + index);
+
+    if (index === 0) {
+      return (<TouchableOpacity
+        onPress={() => {this.onExampleExit && this.onExampleExit()}}
+        style={styles.navBarLeftButton}>
+        <Text style={[styles.navBarText, styles.navBarButtonText]}>
+          &lt;
+        </Text>
+      </TouchableOpacity>)
+    }
+
+    var previousRoute = navState.routeStack[index - 1];
+    return (
+      <TouchableOpacity
+        onPress={() => navigator.pop()}
+        style={styles.navBarLeftButton}>
+        <Text style={[styles.navBarText, styles.navBarButtonText]}>
+          {previousRoute.title}&lt;
+        </Text>
+      </TouchableOpacity>
+    );
+  },
+
+  RightButton: function(route, navigator, index, navState) {
+    return (
+      <TouchableOpacity
+        onPress={() => alert("知道了")}
+        style={styles.navBarRightButton}>
+        <Text style={[styles.navBarText, styles.navBarButtonText]}>
+          Next
+        </Text>
+      </TouchableOpacity>
+    );
+  },
+
+  Title: function(route, navigator, index, navState) {
+    return (
+      <Text style={[styles.navBarText, styles.navBarTitleText]}>
+        {route.title} [{index}]
+      </Text>
+    );
+  },
+
+};
+
+// 如何将部分参数传递给: NavigationBarRouteMapper 呢?
+function NavigationBarRouteMapperFactor(onExampleExit) {
+  NavigationBarRouteMapper.onExampleExit = onExampleExit;
+  return NavigationBarRouteMapper;
+}
+
 var TabBarExample = React.createClass({
 
   statics: {
@@ -112,13 +171,16 @@ var TabBarExample = React.createClass({
 
   renderScene: function(route, nav) {
     switch (route.id) {
+      // 其他情况下，暂时Sample
       case 'navbar':
         return <NavigationBarSample navigator={nav} />;
       case 'breadcrumbs':
         return <BreadcrumbNavSample navigator={nav} />;
       case 'jumping':
         return <JumpingNavSample navigator={nav} />;
+
       default:
+        // NavMenu倒是非常普通，没有什么特色，就是一个ScrollView内部
         return (
           <NavMenu
             message={route.message}
@@ -130,18 +192,30 @@ var TabBarExample = React.createClass({
   },
 
   render: function() {
+    // 新的首页有新的Navigator
+    // Navigator完全通过JS来实现?
     return (
       <Navigator
         ref={this._setNavigatorRef}
         style={styles.container}
         initialRoute={{ message: 'First Scene', }}
+
         renderScene={this.renderScene}
+
         configureScene={(route) => {
+          // Navigator当前的Configure
           if (route.sceneConfig) {
             return route.sceneConfig;
           }
           return Navigator.SceneConfigs.FloatFromBottom;
         }}
+
+        navigationBar={
+          <Navigator.NavigationBar
+            routeMapper={NavigationBarRouteMapperFactor(this.props.onExampleExit)}
+            style={styles.navBar}
+          />
+        }
       />
     );
   },
@@ -152,6 +226,7 @@ var TabBarExample = React.createClass({
   },
 
   _setNavigatorRef: function(navigator) {
+    //
     if (navigator !== this._navigator) {
       this._navigator = navigator;
 
@@ -181,12 +256,28 @@ var styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500',
     padding: 15,
-    marginTop: 50,
-    marginLeft: 15,
+    //marginTop: 50,
+    //marginLeft: 15,
+    borderColor:'red',
+    borderWidth: 0.5,
   },
   container: {
     flex: 1,
   },
+  navBar: {
+    backgroundColor: 'white',
+  },
+  navBarText: {
+    fontSize: 16,
+    marginVertical: 10,
+  },
+  navBarLeftButton: {
+    paddingLeft: 10,
+  },
+  navBarRightButton: {
+    paddingRight: 10,
+  },
+
   button: {
     backgroundColor: 'white',
     padding: 15,
@@ -199,11 +290,13 @@ var styles = StyleSheet.create({
   },
   scene: {
     flex: 1,
-    paddingTop: 20,
+    paddingTop: 64,
     backgroundColor: '#EAEAEA',
   }
 });
 
+// external 这个是什么意思?
+// 会替换原来的首页
 TabBarExample.external = true;
 
 module.exports = TabBarExample;

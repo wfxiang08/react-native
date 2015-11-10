@@ -53,6 +53,7 @@ var NavigatorNavigationBar = React.createClass({
 
   propTypes: {
     navigator: React.PropTypes.object,
+    // routeMapper是什么东西?
     routeMapper: React.PropTypes.shape({
       Title: React.PropTypes.func.isRequired,
       LeftButton: React.PropTypes.func.isRequired,
@@ -74,6 +75,7 @@ var NavigatorNavigationBar = React.createClass({
 
   getDefaultProps() {
     return {
+      // 默认的样式
       navigationStyles: NavigatorNavigationBarStyles,
     };
   },
@@ -150,10 +152,14 @@ var NavigatorNavigationBar = React.createClass({
   },
 
   render: function() {
+    // NavigationBar如何定义?
     var navBarStyle = {
       height: this.props.navigationStyles.General.TotalNavHeight,
     };
     var navState = this.props.navState;
+
+
+    // 左 中 右
     var components = COMPONENT_NAMES.map(function (componentName) {
       return navState.routeStack.map(
         this._getComponent.bind(this, componentName)
@@ -172,12 +178,17 @@ var NavigatorNavigationBar = React.createClass({
     /*object*/route,
     /*number*/index
   ) /*?Object*/ {
+
+    // componentName: 在上面bind时指定
+    // route
     if (this._descriptors[componentName].includes(route)) {
       return this._descriptors[componentName].get(route);
     }
 
     var rendered = null;
 
+    // Component分为: Left, Title, Right
+    // content就是View中间的内容，可能是button, 也可能是其他的
     var content = this.props.routeMapper[componentName](
       this.props.navState.routeStack[index],
       this.props.navigator,

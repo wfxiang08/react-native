@@ -36,7 +36,12 @@ var NAV_BAR_HEIGHT = 44;
 var STATUS_BAR_HEIGHT = 20;
 var NAV_HEIGHT = NAV_BAR_HEIGHT + STATUS_BAR_HEIGHT;
 
+// Navigator的样式
+
 var BASE_STYLES = {
+  // 默认: Title
+  // 顶部: 20~20 + 44
+  // 元素剧中，左右分别为0,0
   Title: {
     position: 'absolute',
     top: STATUS_BAR_HEIGHT,
@@ -46,6 +51,7 @@ var BASE_STYLES = {
     height: NAV_BAR_HEIGHT,
     backgroundColor: 'transparent',
   },
+  // LeftButton左上角固定，宽度呢?
   LeftButton: {
     position: 'absolute',
     top: STATUS_BAR_HEIGHT,
@@ -55,6 +61,7 @@ var BASE_STYLES = {
     height: NAV_BAR_HEIGHT,
     backgroundColor: 'transparent',
   },
+  // 右上角固定，高度固定, flex-end
   RightButton: {
     position: 'absolute',
     top: STATUS_BAR_HEIGHT,
@@ -67,6 +74,7 @@ var BASE_STYLES = {
   },
 };
 
+// 如何管理ViewControllers/View(也就是Navigation Items), stages的概念
 // There are 3 stages: left, center, right. All previous navigation
 // items are in the left stage. The current navigation item is in the
 // center stage. All upcoming navigation items are in the right stage.

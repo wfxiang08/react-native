@@ -28,6 +28,11 @@ var {
   View,
 } = React;
 
+
+/**
+ *  如何区分JS实现的Navigator和NavigatorIOS，两者的区别在什么地方呢?
+ *
+ */
 var EmptyPage = React.createClass({
 
   render: function() {
@@ -42,6 +47,10 @@ var EmptyPage = React.createClass({
 
 });
 
+//
+// NavigatorIOS:
+//    基本上啥都没有做，直接利用了: this.props.navigator, 然后去把玩navigator的接口
+//
 var NavigatorIOSExample = React.createClass({
   // 静态变量
   statics: {
@@ -75,10 +84,11 @@ var NavigatorIOSExample = React.createClass({
           {this._renderRow(recurseTitle, () => {
             // 递归将 NavigatorIOSExample 打开
             // 最上面的 NavigatorIOSExample 的标题和之后打开的标题不一样
+            // 注意这里就是一个Route, 可以用于定制页面的效果
             this.props.navigator.push({
               title: NavigatorIOSExample.title,
               component: NavigatorIOSExample,
-              backButtonTitle: '返回',
+              backButtonTitle: '',
               passProps: {topExampleRoute: this.props.topExampleRoute || this.props.route},
             });
           })}
@@ -107,7 +117,7 @@ var NavigatorIOSExample = React.createClass({
             this.props.navigator.push({
               title: NavigatorIOSExample.title,
               component: EmptyPage,
-              leftButtonTitle: '[返回]',
+              leftButtonTitle: '[返回]', // 可以指定，也可以通过图片来控制
               onLeftButtonPress: () => this.props.navigator.pop(),
               rightButtonIcon: require('image!NavBarButtonPlus'),
               onRightButtonPress: () => {

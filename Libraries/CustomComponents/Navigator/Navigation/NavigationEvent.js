@@ -37,6 +37,7 @@ class NavigationEventPool {
   }
 
   get(type: string, currentTarget: Object, data: any): NavigationEvent {
+    // 这似乎是一个Event工厂，专门用于创建Event
     var event;
     if (this._list.length > 0) {
       event = this._list.pop();
@@ -64,6 +65,7 @@ var _navigationEventPool = new NavigationEventPool();
  *   A reference to the navigation context that dispatched the event. It is
  *   different from event.currentTarget when the event handler is called during
  *   the bubbling or capturing phase of the event.
+ *   冒泡，捕获阶段?
  *
  * - currentTarget:
  *   Identifies the current target for the event, as the event traverses the
@@ -77,6 +79,8 @@ var _navigationEventPool = new NavigationEventPool();
  *   constants below.
  */
 class NavigationEvent {
+  // 如何定义静态变量
+  // http://www.cnblogs.com/hh54188/archive/2012/02/08/2343357.html
   static AT_TARGET: number;
   static BUBBLING_PHASE: number;
   static CAPTURING_PHASE: number;
@@ -95,6 +99,7 @@ class NavigationEvent {
   // the event flow.
   eventPhase: number;
 
+  // 复用Event, 减少内存管理开销?
   static pool(type: string, currentTarget: Object, data: any): NavigationEvent {
     return _navigationEventPool.get(type, currentTarget, data);
   }
@@ -106,6 +111,7 @@ class NavigationEvent {
     this._type = type;
     this._currentTarget = currentTarget;
     this._data = data;
+
     this._defaultPrevented = false;
     this._disposed = false;
     this._propagationStopped = false;

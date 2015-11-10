@@ -16,13 +16,22 @@
 'use strict';
 
 var React = require('react-native');
+
+//
+// destruct模式的使用
+//
 var {
   ActivityIndicatorIOS,
   StyleSheet,
   View,
 } = React;
+
 var TimerMixin = require('react-timer-mixin');
 
+//
+// TimerMixin如何使用呢?
+// 引用了一个简单的: ToggleAnimatingActivityIndicator 控件
+//
 var ToggleAnimatingActivityIndicator = React.createClass({
   mixins: [TimerMixin],
 
@@ -33,6 +42,7 @@ var ToggleAnimatingActivityIndicator = React.createClass({
   },
 
   setToggleTimeout: function() {
+    // 通过Timeout不停地设置动画
     this.setTimeout(
       () => {
         this.setState({animating: !this.state.animating});
@@ -43,10 +53,12 @@ var ToggleAnimatingActivityIndicator = React.createClass({
   },
 
   componentDidMount: function() {
+    // 页面加载之后，启动timeout
     this.setToggleTimeout();
   },
 
   render: function() {
+    // 因为带有: state, 因此会不断刷新
     return (
       <ActivityIndicatorIOS
         animating={this.state.animating}
@@ -57,12 +69,17 @@ var ToggleAnimatingActivityIndicator = React.createClass({
   }
 });
 
+
+//
+// ActivityIndicatorIOSExample返回一坨数据, 注意require之后的对象的引用
+//
 exports.displayName = (undefined: ?string);
 exports.framework = 'React';
 exports.title = '<ActivityIndicatorIOS>';
 exports.description = 'Animated loading indicators.';
 
 exports.examples = [
+  // 定义了一组examples, 那么如何在Demo中被用起来的呢?
   {
     title: 'Default (small, white)',
     render: function() {

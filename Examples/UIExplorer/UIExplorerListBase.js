@@ -149,9 +149,9 @@ class UIExplorerListBase extends React.Component {
   }
 
   static makeRenderable(example: any): ReactClass<any, any, any> {
-    return example.examples ?
-      createExamplePage(null, example) :
-      example;
+    // 如果没有examples属性，那说明: example本身就是一个View, 可以直接Render
+    //      如果有呢，则需要进行wrap
+    return example.examples ? createExamplePage("标题", example) : example;
   }
 }
 

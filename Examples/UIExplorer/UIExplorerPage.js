@@ -25,6 +25,7 @@ var {
 
 var UIExplorerTitle = require('./UIExplorerTitle');
 
+// Page是一个什么样的对象呢?
 var UIExplorerPage = React.createClass({
 
   propTypes: {
@@ -36,6 +37,9 @@ var UIExplorerPage = React.createClass({
   render: function() {
     var ContentWrapper;
     var wrapperProps = {};
+
+    // 1. ContentWrapper： 是否需要滚动，默认是需要的
+    // 以及对应的属性
     if (this.props.noScroll) {
       ContentWrapper = (View: ReactClass<any, any, any>);
     } else {
@@ -44,9 +48,10 @@ var UIExplorerPage = React.createClass({
       wrapperProps.keyboardShouldPersistTaps = true;
       wrapperProps.keyboardDismissMode = 'interactive';
     }
-    var title = this.props.title ?
-      <UIExplorerTitle title={this.props.title} /> :
-      null;
+
+    // 2. title
+    //var title = this.props.title ? <UIExplorerTitle title={this.props.title} /> : null;
+    var title = <UIExplorerTitle title={"标题"} />;
     var spacer = this.props.noSpacer ? null : <View style={styles.spacer} />;
     return (
       <View style={styles.container}>

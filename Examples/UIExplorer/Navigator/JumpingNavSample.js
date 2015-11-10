@@ -31,6 +31,9 @@ var _getRandomRoute = function() {
   };
 };
 
+//
+// 带有文字和callback的按钮
+//
 class NavButton extends React.Component {
   render() {
     return (
@@ -45,12 +48,17 @@ class NavButton extends React.Component {
 }
 
 var ROUTE_STACK = [
-  _getRandomRoute(),
-  _getRandomRoute(),
-  _getRandomRoute(),
+  {randNumber: 1},
+  {randNumber: 2},
+  {randNumber: 3},
+  //_getRandomRoute(),
+  //_getRandomRoute(),
+  //_getRandomRoute(),
 ];
 var INIT_ROUTE_INDEX = 1;
 
+// 定义了一个TabBar
+//
 class JumpingNavBar extends React.Component {
   constructor(props) {
     super(props);
@@ -58,11 +66,15 @@ class JumpingNavBar extends React.Component {
       tabIndex: props.initTabIndex,
     };
   }
+  // Navibar的接口?
   handleWillFocus(route) {
     var tabIndex = ROUTE_STACK.indexOf(route);
     this.setState({ tabIndex, });
   }
   render() {
+    // TabBar如何定制呢?
+    // 高度50?
+    // 默认的View都为空? 这个如何理解呢?
     return (
       <View style={styles.tabs}>
         <TabBarIOS>
@@ -101,11 +113,15 @@ class JumpingNavBar extends React.Component {
 
 var JumpingNavSample = React.createClass({
   render: function() {
+    // 这是什么东西呢?
+    // Route是什么东西？如何工作的呢?
+    //
     return (
       <Navigator
         debugOverlay={false}
         style={styles.appContainer}
         ref={(navigator) => {
+          // ref
           this._navigator = navigator;
         }}
         initialRoute={ROUTE_STACK[INIT_ROUTE_INDEX]}
@@ -120,6 +136,7 @@ var JumpingNavSample = React.createClass({
             initTabIndex={INIT_ROUTE_INDEX}
             routeStack={ROUTE_STACK}
             onTabIndex={(index) => {
+              // navigationBar为什么又放在最下面了呢?
               this._navigator.jumpTo(ROUTE_STACK[index]);
             }}
           />
@@ -131,6 +148,8 @@ var JumpingNavSample = React.createClass({
   renderScene: function(route, navigator) {
     var backBtn;
     var forwardBtn;
+
+    // 后面的Route可以jumpBack
     if (ROUTE_STACK.indexOf(route) !== 0) {
       backBtn = (
         <NavButton
@@ -141,6 +160,7 @@ var JumpingNavSample = React.createClass({
         />
       );
     }
+    // 前面的Route可以jumpForwad
     if (ROUTE_STACK.indexOf(route) !== ROUTE_STACK.length - 1) {
       forwardBtn = (
         <NavButton
@@ -151,9 +171,10 @@ var JumpingNavSample = React.createClass({
         />
       );
     }
+    // 最终的界面
     return (
       <ScrollView style={styles.scene}>
-        <Text style={styles.messageText}>#{route.randNumber}</Text>
+        <Text style={styles.messageText}>路由编号: #{route.randNumber}</Text>
         {backBtn}
         {forwardBtn}
         <NavButton

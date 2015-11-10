@@ -73,6 +73,8 @@
     "optimist": "^0.6.1",
     "progress": "^1.1.8",
     "promise": "^7.0.4",
+    "react-native-navbar": "^1.0.4",
+    "react-native-tabbar-navigator": "^0.1.0",
     "react-timer-mixin": "^0.13.2",
     "react-tools": "facebook/react#b4e74e3",
     "rebound": "^0.0.13",
@@ -88,8 +90,7 @@
     "ws": "^0.8.0",
     "yargs": "^3.24.0",
     "yeoman-environment": "^1.2.7",
-    "yeoman-generator": "^0.20.3",
-    "react-native-navbar": "^1.0.4"
+    "yeoman-generator": "^0.20.3"
   },
   "devDependencies": {
     "jest-cli": "0.6.1",

@@ -36,10 +36,10 @@ public class UIExplorerActivity extends Activity implements DefaultHardwareBackB
         setContentView(R.layout.activity_main);
 
         // 在Debug模式下，开启此段代码
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplication());
-        SharedPreferences.Editor editor = pref.edit();
-        editor.putString("debug_http_host", "192.168.43.204:8081");
-        editor.commit();
+//        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplication());
+//        SharedPreferences.Editor editor = pref.edit();
+//        editor.putString("debug_http_host", "192.168.43.204:8081");
+//        editor.commit();
 
         mReactInstanceManager = ReactInstanceManager.builder()
                 .setApplication(getApplication())

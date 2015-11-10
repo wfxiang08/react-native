@@ -54,6 +54,7 @@ var PropTypes = React.PropTypes;
 // size of the navigator right now, so this is the next best thing.
 var SCREEN_WIDTH = Dimensions.get('window').width;
 var SCREEN_HEIGHT = Dimensions.get('window').height;
+
 var SCENE_DISABLED_NATIVE_PROPS = {
   pointerEvents: 'none',
   style: {
@@ -63,6 +64,7 @@ var SCENE_DISABLED_NATIVE_PROPS = {
   },
 };
 
+// uid什么时候使用?
 var __uid = 0;
 function getuid() {
   return __uid++;
@@ -377,9 +379,12 @@ var Navigator = React.createClass({
   },
 
   _transitionTo: function(destIndex, velocity, jumpSpringTo, cb) {
+    // 如何切换到指定的 destIndex呢?
     if (destIndex === this.state.presentedIndex) {
       return;
     }
+
+    // 如果没有From如何处理呢?
     if (this.state.transitionFromIndex !== null) {
       this.state.transitionQueue.push({
         destIndex,
@@ -894,16 +899,22 @@ var Navigator = React.createClass({
   },
 
   push: function(route) {
+    // 用法:
+    // this.props.navigator.push({ id: 'navbar' });
     invariant(!!route, 'Must supply route to push');
+
     var activeLength = this.state.presentedIndex + 1;
     var activeStack = this.state.routeStack.slice(0, activeLength);
+
     var activeAnimationConfigStack = this.state.sceneConfigStack.slice(0, activeLength);
     var nextStack = activeStack.concat([route]);
     var destIndex = nextStack.length - 1;
     var nextAnimationConfigStack = activeAnimationConfigStack.concat([
       this.props.configureScene(route),
     ]);
+
     this._emitWillFocus(nextStack[destIndex]);
+
     this.setState({
       routeStack: nextStack,
       sceneConfigStack: nextAnimationConfigStack,

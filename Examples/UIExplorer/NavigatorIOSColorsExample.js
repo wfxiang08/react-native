@@ -28,7 +28,7 @@ var EmptyPage = React.createClass({
     return (
       <View style={styles.emptyPage}>
         <Text style={styles.emptyPageText}>
-          {this.props.text}
+          太有意思了: {this.props.text}
         </Text>
       </View>
     );
@@ -45,14 +45,18 @@ var NavigatorIOSColors = React.createClass({
 
   render: function() {
     // Set StatusBar with light contents to get better contrast
-    StatusBarIOS.setStyle('light-content');
-
+    //StatusBarIOS.setStyle('light-content');
+    StatusBarIOS.setStyle('default');
+    // 新的页面有新的Navigator
+    // 通过initialRoute指定初始展示的页面
+    // translucent={true}
+    // barTintColor="#183E63"
     return (
       <NavigatorIOS
         style={styles.container}
         initialRoute={{
           component: EmptyPage,
-          title: '<NavigatorIOS>',
+          title: 'IOS导航栏',
           rightButtonTitle: 'Done',
           onRightButtonPress: () => {
             StatusBarIOS.setStyle('default');
@@ -64,9 +68,9 @@ var NavigatorIOSColors = React.createClass({
           },
         }}
         tintColor="#FFFFFF"
-        barTintColor="#183E63"
+        barTintColor="#FF3E63"
         titleTextColor="#FFFFFF"
-        translucent={true}
+
       />
     );
   },
@@ -83,6 +87,7 @@ var styles = StyleSheet.create({
   },
   emptyPageText: {
     margin: 10,
+    lineHeight:80, // 行高控制
   },
 });
 

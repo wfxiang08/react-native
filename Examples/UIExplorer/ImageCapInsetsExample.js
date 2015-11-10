@@ -26,11 +26,16 @@ var {
 
 var ImageCapInsetsExample = React.createClass({
   render: function() {
+    // 布局:
+    // 首先是一个View
+    // 然后两个subViews
+    //
+    // capInsets: 就是九宫格图，图片的边边角角不会边，但是中间部分会被拉升
     return (
       <View>
         <View style={styles.background}>
           <Text>
-            capInsets: none
+            capInsets: none(capInset没有设置，图片被拉升，出现边角模糊)
           </Text>
           <Image
             source={require('image!story-background')}
@@ -38,7 +43,7 @@ var ImageCapInsetsExample = React.createClass({
             capInsets={{left: 0, right: 0, bottom: 0, top: 0}}
           />
         </View>
-        <View style={[styles.background, {paddingTop: 10}]}>
+        <View style={[styles.background, {paddingTop: 10, marginTop: 20}]}>
           <Text>
             capInsets: 15
           </Text>
@@ -58,13 +63,15 @@ var styles = StyleSheet.create({
     backgroundColor: '#F6F6F6',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: "#990000",
   },
   horizontal: {
     flexDirection: 'row',
   },
   storyBackground: {
-    width: 250,
-    height: 150,
+    width: 320,
+    height: 250,
     borderWidth: 1,
     resizeMode: Image.resizeMode.stretch,
   },

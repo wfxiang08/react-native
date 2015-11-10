@@ -9,6 +9,7 @@
 
 #import "RCTViewManager.h"
 
+// 如何控制: NavItem
 @interface RCTNavItemManager : RCTViewManager
 
 @end

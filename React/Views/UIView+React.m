@@ -78,26 +78,40 @@
   self.backgroundColor = inheritedBackgroundColor;
 }
 
+//
+// 所有的UIView都可能返回对应的UIViewController
+// UIView --> UIView --> UIViewController --> ... UIView ---> UIViewController ....
+//
 - (UIViewController *)reactViewController {
   id responder = [self nextResponder];
   while (responder) {
     if ([responder isKindOfClass:[UIViewController class]]) {
       return responder;
     }
+    
+    // View --> UIViewController
+    // View --> superview
+    // UIViewController --> superview of UIViewController#view
+    //
     responder = [responder nextResponder];
   }
   return nil;
 }
 
 - (void)reactAddControllerToClosestParent:(UIViewController *)controller {
+  // 如果controller没有归属，则可以操作
   if (!controller.parentViewController) {
+    // 找到当前的SuperView
     UIView *parentView = (UIView *)self.reactSuperview;
     while (parentView) {
+      // 似乎一般的UIView就到此为止
       if (parentView.reactViewController) {
         [parentView.reactViewController addChildViewController:controller];
         [controller didMoveToParentViewController:parentView.reactViewController];
         break;
       }
+      
+      //
       parentView = (UIView *)parentView.reactSuperview;
     }
     return;

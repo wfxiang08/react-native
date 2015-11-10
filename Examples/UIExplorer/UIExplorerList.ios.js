@@ -38,9 +38,11 @@ var COMPONENTS = [
   require('./ListViewPagingExample'),
   require('./MapViewExample'),
   require('./ModalExample'),
-  require('./Navigator/NavigatorExample'),
-  require('./NavigatorIOSColorsExample'),
+
+  require('./Navigator/NavigatorExample'), // 如何使用JS实现一个Navigator呢?
+  require('./NavigatorIOSColorsExample'), // 用于展示如何设置 Navigation的样式
   require('./NavigatorIOSExample'),
+
   require('./PickerIOSExample'),
   require('./ProgressViewIOSExample'),
   require('./ScrollViewExample'),
@@ -105,6 +107,8 @@ COMPONENTS.concat(APIS).forEach((Example) => {
 
 // type的意义
 type Props = {
+  // 定义了props的接口:
+  // navigator的push的参数: route
   navigator: {
     navigationContext: NavigationContext,
     push: (route: {title: string, component: ReactClass<any,any,any>}) => void,
@@ -140,13 +144,21 @@ class UIExplorerList extends React.Component {
   }
 
   _openExample(example: any) {
+    // 这个如何理解?
+    // 暂不考虑
     if (example.external) {
       this.props.onExternalExampleRequested(example);
       return;
     }
-    //alert(example);
-
+    //
+    // 如何打开example呢?
+    // 例如: ActivityIndicatorIOSExample 到底是什么东西呢?
+    // Component是什么东西，什么时候才能直接作为Navigator的参数呢?
+    //
     var Component = UIExplorerListBase.makeRenderable(example);
+
+    // 如何打开一个新的界面
+    // 直接通过pops.navigator.push来完成
     this.props.navigator.push({
       title: Component.title,
       component: Component,

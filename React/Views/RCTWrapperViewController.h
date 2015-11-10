@@ -21,6 +21,7 @@ didMoveToNavigationController:(UINavigationController *)navigationController;
 
 @end
 
+// 扩展的ViewController???
 @interface RCTWrapperViewController : UIViewController <RCTViewControllerProtocol>
 
 - (instancetype)initWithContentView:(UIView *)contentView NS_DESIGNATED_INITIALIZER;

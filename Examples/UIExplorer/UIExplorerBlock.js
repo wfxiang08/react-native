@@ -24,17 +24,24 @@ var {
 } = React;
 
 var UIExplorerBlock = React.createClass({
+  // Block的属性：
+  // 标题
+  // 描述
+  // state 似乎没有作用
+  // Block可以内嵌Children
   propTypes: {
     title: React.PropTypes.string,
     description: React.PropTypes.string,
   },
 
   getInitialState: function() {
+    // 初始的状态: 描述为空
     return {description: (null: ?string)};
   },
 
   render: function() {
     var description;
+
     if (this.props.description) {
       description =
         <Text style={styles.descriptionText}>
@@ -96,6 +103,8 @@ var styles = StyleSheet.create({
   },
   children: {
     margin: 10,
+    //borderWidth: 0.5,
+    //borderColor:"#FF0000",
   }
 });
 

@@ -30,8 +30,12 @@ import type { Example, ExampleModule } from 'ExampleTypes';
 
 var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
   : ReactClass<any, any, any> {
+
+  // exampleModule： 必须包含examples
   invariant(!!exampleModule.examples, 'The module must have examples');
 
+  // 将examples这个数组变成一个renderable的界面
+  // 定义一个renderable接口
   var ExamplePage = React.createClass({
     statics: {
       title: exampleModule.title,
@@ -39,12 +43,15 @@ var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
     },
 
     getBlock: function(example: Example, i) {
+
+      // 如果限定了platform, 则依据当前的platform进行过滤
       if (example.platform) {
         if (Platform.OS !== example.platform) {
           return;
         }
         example.title += ' (' + example.platform + ' only)';
       }
+
       // Hack warning: This is a hack because the www UI explorer requires
       // renderComponent to be called.
       var originalRender = React.render;
@@ -52,6 +59,7 @@ var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
       var originalIOSRender = ReactNative.render;
       var originalIOSRenderComponent = ReactNative.renderComponent;
       var renderedComponent;
+
       // TODO remove typecasts when Flow bug #6560135 is fixed
       // and workaround is removed from react-native.js
       (React: Object).render =
@@ -61,7 +69,11 @@ var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
         function(element, container) {
           renderedComponent = element;
         };
+
+      // 得到: result
       var result = example.render(null);
+
+      // 如果有view, 则需要设置: navigator属性
       if (result) {
         renderedComponent = React.cloneElement(result, {
           navigator: this.props.navigator,
@@ -71,6 +83,8 @@ var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
       (React: Object).renderComponent = originalRenderComponent;
       (ReactNative: Object).render = originalIOSRender;
       (ReactNative: Object).renderComponent = originalIOSRenderComponent;
+
+      // 标题&描述
       return (
         <UIExplorerBlock
           key={i}
@@ -82,8 +96,9 @@ var createExamplePage = function(title: ?string, exampleModule: ExampleModule)
     },
 
     render: function() {
+      // 遍历所有的Blocks，生成UIExplorerBlock对象
       return (
-        <UIExplorerPage title={title}>
+        <UIExplorerPage title={"标题"}>
           {exampleModule.examples.map(this.getBlock)}
         </UIExplorerPage>
       );

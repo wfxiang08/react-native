@@ -46,6 +46,7 @@ NSInteger kNeverProgressed = -10000;
   dispatch_block_t _scrollCallback;
 }
 
+// 当前谁加上了锁
 @property (nonatomic, assign) RCTNavigationLock navigationLock;
 
 @end
@@ -61,13 +62,19 @@ NSInteger kNeverProgressed = -10000;
  * ahead by adding/removing React subviews. Native gets ahead by swiping back,
  * or tapping the back button. In both cases, the other system is initially
  * unaware. And in both cases, `RCTNavigator` helps the other side "catch up".
+ * 
+ *
+ * RCTNavigator 作为 JS和Native之间的桥梁，来负责维持两端的信息的一致
+ * React subViews(虚拟的节点，一个节点可能对应多个Native Views)
+ * viewControllers
  *
  * If `RCTNavigator` sees the number of React children have changed, it
- * pushes/pops accordingly. If `RCTNavigator` sees a `UIKit` driven push/pop, it
- * notifies JavaScript that this has happened, and expects that JavaScript will
- * eventually render more children to match `UIKit`. There's no rush for
- * JavaScript to catch up. But if it does rener anything, it must catch up to
- * UIKit. It cannot deviate.
+ * pushes/pops accordingly. 
+ * 
+ * 1.1 If `RCTNavigator` sees a `UIKit` driven push/pop, it notifies JavaScript that this has happened, and expects that JavaScript will
+ *     eventually render more children to match `UIKit`.
+ * 1.2 There's no rush for JavaScript to catch up. But if it does rener anything, it must catch up to
+ *     UIKit. It cannot deviate.
  *
  * To implement this, we need a lock, which we store on the native thread. This
  * lock allows one of the systems to push/pop views. Whoever wishes to
@@ -141,6 +148,9 @@ NSInteger kNeverProgressed = -10000;
  */
 - (instancetype)initWithScrollCallback:(dispatch_block_t)callback {
   if ((self = [super initWithNibName:nil bundle:nil])) {
+    //
+    // dispatch_block_t 表示一个不需要参数的block, 可以直接执行
+    //
     _scrollCallback = callback;
   }
   return self;
@@ -148,19 +158,23 @@ NSInteger kNeverProgressed = -10000;
 
 /**
  * Invoked when either a navigation item has been popped off, or when a
- * swipe-back gesture has began. The swipe-back gesture doesn't respect the
- * return value of this method. The back button does. That's why we have to
+ * swipe-back gesture has began. 
+ * The swipe-back gesture doesn't respect the return value of this method.  (在某些情况下直接禁用)
+ * The back button does. That's why we have to
  * completely disable the gesture recognizer for swipe-back while JS has the
  * lock.
  */
 - (BOOL)navigationBar:(UINavigationBar *)navigationBar shouldPopItem:(UINavigationItem *)item {
+  // 如果是Native开始swip-back, 然后就加锁
   if (self.interactivePopGestureRecognizer.state == UIGestureRecognizerStateBegan) {
     if (self.navigationLock == RCTNavigationLockNone) {
+      // 如果没有加锁，则Native加锁
       self.navigationLock = RCTNavigationLockNative;
       if (_scrollCallback) {
         _scrollCallback();
       }
     } else if (self.navigationLock == RCTNavigationLockJavaScript) {
+      // JS加锁期间不应该出现这个情况
       // This should never happen because we disable/enable the gesture
       // recognizer when we lock the navigation.
       RCTAssert(NO, @"Should never receive gesture start while JS locks navigator");
@@ -286,7 +300,7 @@ NSInteger kNeverProgressed = -10000;
     _previousRequestedTopOfStack = kNeverRequested; // So that we initialize with a push.
 
     _previousViews = @[];
-    _currentViews = [[NSMutableArray alloc] initWithCapacity:0];
+    _currentViews = [[NSMutableArray alloc] initWithCapacity:0]; // RCTNavItem
     
     __weak RCTNavigator *weakSelf = self;
     _navigationController = [[RCTNavigationController alloc] initWithScrollCallback:^{
@@ -315,16 +329,19 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 - (void)didUpdateFrame:(__unused RCTFrameUpdate *)update {
   if (_currentlyTransitioningFrom != _currentlyTransitioningTo) {
     
+    // 只是一个callback
     UIView *topView = _dummyView;
     id presentationLayer = [topView.layer presentationLayer];
     CGRect frame = [presentationLayer frame];
-    CGFloat nextProgress = ABS(frame.origin.x);
+    CGFloat nextProgress = ABS(frame.origin.x); // -1.0 ~ 0 ~ 1.0, ABS
     
     // Don't want to spam the bridge, when the user holds their finger still mid-navigation.
     if (nextProgress == _mostRecentProgress) {
       return;
     }
     _mostRecentProgress = nextProgress;
+    
+    // 汇报NavigationProgress
     if (_onNavigationProgress) {
       _onNavigationProgress(@{
         @"fromIndex": @(_currentlyTransitioningFrom),
@@ -362,16 +379,25 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
                     animated:(__unused BOOL)animated {
   
   id<UIViewControllerTransitionCoordinator> tc = navigationController.topViewController.transitionCoordinator;
-
+  // RCTNavigationController
+  // RCTWrapperViewController
+  // _UIViewControllerTransitionCoordinator
   __weak RCTNavigator *weakSelf = self;
   [tc.containerView addSubview: _dummyView];
+  
+  // http://blog.csdn.net/hmt20130412/article/details/39079905
+  // 基于百分比的动画实现?
   [tc animateAlongsideTransition: ^(id<UIViewControllerTransitionCoordinatorContext> context) {
     RCTWrapperViewController *fromController = (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextFromViewControllerKey];
     RCTWrapperViewController *toController =   (RCTWrapperViewController *)[context viewControllerForKey:UITransitionContextToViewControllerKey];
+    
     NSUInteger indexOfFrom = [_currentViews indexOfObject:fromController.navItem];
     NSUInteger indexOfTo = [_currentViews indexOfObject:toController.navItem];
+    
+    // _dummyView.frame: 0 ~ 1.0 之间变化，刚好能体现进度
     CGFloat destination = indexOfFrom < indexOfTo ? 1.0 : -1.0;
     _dummyView.frame = (CGRect){{destination, 0}, CGSizeZero};
+    
     _currentlyTransitioningFrom = indexOfFrom;
     _currentlyTransitioningTo = indexOfTo;
     self.paused = NO;
@@ -386,15 +412,24 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }];
 }
 
+
+//
+// Javascript申请获取NavigationLock
+// Native的交互被暂停
+//
 - (BOOL)requestSchedulingJavaScriptNavigation {
   if (_navigationController.navigationLock == RCTNavigationLockNone) {
     _navigationController.navigationLock = RCTNavigationLockJavaScript;
+    // 有些接口的返回值在PopGesture中不可依赖
     _navigationController.interactivePopGestureRecognizer.enabled = NO;
     return YES;
   }
   return NO;
 }
 
+//
+// 释放锁
+//
 - (void)freeLock {
   _navigationController.navigationLock = RCTNavigationLockNone;
   _navigationController.interactivePopGestureRecognizer.enabled = YES;
@@ -405,30 +440,31 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
  * `requestedTopOfStack` changes, there had better be enough subviews present
  * to satisfy the push/pop.
  */
-- (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex
-{
+- (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex {
   RCTAssert([view isKindOfClass:[RCTNavItem class]], @"RCTNavigator only accepts RCTNavItem subviews");
   RCTAssert(
     _navigationController.navigationLock == RCTNavigationLockJavaScript,
     @"Cannot change subviews from JS without first locking."
   );
+  
+  //
+  // 由JS调用, 并且必须先获得锁
+  //
   [_currentViews insertObject:view atIndex:atIndex];
 }
 
-- (NSArray *)reactSubviews
-{
+- (NSArray *)reactSubviews {
   return _currentViews;
 }
 
-- (void)layoutSubviews
-{
+- (void)layoutSubviews {
   [super layoutSubviews];
+  
   [self reactAddControllerToClosestParent:_navigationController];
   _navigationController.view.frame = self.bounds;
 }
 
-- (void)removeReactSubview:(UIView *)subview
-{
+- (void)removeReactSubview:(UIView *)subview {
   if (_currentViews.count <= 0 || subview == _currentViews[0]) {
     RCTLogError(@"Attempting to remove invalid RCT subview of RCTNavigator");
     return;
@@ -436,8 +472,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   [_currentViews removeObject:subview];
 }
 
-- (void)handleTopOfStackChanged
-{
+- (void)handleTopOfStackChanged {
+  // Stack变化结束
   if (_onNavigationComplete) {
     _onNavigationComplete(@{
       @"stackLength":@(_navigationController.viewControllers.count)
@@ -445,8 +481,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   }
 }
 
-- (void)dispatchFakeScrollEvent
-{
+- (void)dispatchFakeScrollEvent {
   [_bridge.eventDispatcher sendScrollEventWithType:RCTScrollEventTypeMove
                                    reactTag:self.reactTag
                                  scrollView:nil
@@ -457,14 +492,12 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
  * Must be overridden because UIKit removes the view's superview when used
  * as a navigator - it's considered outside the view hierarchy.
  */
-- (UIView *)reactSuperview
-{
+- (UIView *)reactSuperview {
   RCTAssert(!_bridge.isValid || self.superview != nil, @"put reactNavSuperviewLink back");
   return self.superview ? self.superview : self.reactNavSuperviewLink;
 }
 
-- (void)reactBridgeDidFinishTransaction
-{
+- (void)reactBridgeDidFinishTransaction {
   // we can't hook up the VC hierarchy in 'init' because the subviews aren't
   // hooked up yet, so we do it on demand here
   [self reactAddControllerToClosestParent:_navigationController];
@@ -549,9 +582,9 @@ BOOL jsGettingtooSlow =
 
 // TODO: This will likely fail when performing multiple pushes/pops. We must
 // free the lock only after the *last* push/pop.
-- (void)wrapperViewController:(RCTWrapperViewController *)wrapperViewController
-didMoveToNavigationController:(UINavigationController *)navigationController
-{
+- (void)    wrapperViewController:(RCTWrapperViewController *)wrapperViewController
+    didMoveToNavigationController:(UINavigationController *)navigationController {
+
   if (self.superview == nil) {
     // If superview is nil, then a JS reload (Cmd+R) happened
     // while a push/pop is in progress.

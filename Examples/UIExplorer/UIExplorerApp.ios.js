@@ -37,7 +37,11 @@ var UIExplorerApp = React.createClass({
   },
 
   render: function() {
+    // 这是什么逻辑呢?
+    // 如果: onExternalExampleRequested 被调用，那么首页就会被刷新, 换成新的外部页面
+    //      在返回的时候，首页重建，页面的scroll信息全部丢失!!!!
     if (this.state.openExternalExample) {
+      console.log("openExternalExample");
       var Example = this.state.openExternalExample;
       return (
         <Example
@@ -48,6 +52,7 @@ var UIExplorerApp = React.createClass({
       );
     }
 
+    // 首先: UIExplorerList 在 NavigatorIOS内部打开，肯定会有 props.navigator设置， 而且: 还有: onExternalExampleRequested 设置
     return (
       <NavigatorIOS
         style={styles.container}

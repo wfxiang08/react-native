@@ -36,6 +36,7 @@ function getuid() {
 
 var NavigatorTransitionerIOS = React.createClass({
   requestSchedulingNavigation: function(cb) {
+    // 首先获取Navigator Lock
     RCTNavigatorManager.requestSchedulingJavaScriptNavigation(
       React.findNodeHandle(this),
       logError,
@@ -44,12 +45,14 @@ var NavigatorTransitionerIOS = React.createClass({
   },
 
   render: function() {
+    // 创建一个IOS版的RCTNavigator
     return (
       <RCTNavigator {...this.props}/>
     );
   },
 });
 
+// 注意: Route的定义, 更重要的是如何使用Route呢?
 type Route = {
   component: Function;
   title: string;
@@ -65,6 +68,7 @@ type Route = {
   wrapperStyle?: any;
 };
 
+// State就是当前?
 type State = {
   idStack: Array<number>;
   routeStack: Array<Route>;
@@ -288,6 +292,7 @@ var NavigatorIOS = React.createClass({
   componentWillMount: function() {
     // Precompute a pack of callbacks that's frequently generated and passed to
     // instances.
+    // 通过navigator提供便利的访问方法
     this.navigator = {
       push: this.push,
       pop: this.pop,
@@ -595,6 +600,9 @@ var NavigatorIOS = React.createClass({
     var shouldUpdateChild = this.state.updatingAllIndicesAtOrBeyond !== null &&
       this.state.updatingAllIndicesAtOrBeyond >= i;
 
+    // 页面的结构:
+    // StaticContainer 没啥实质性内容
+    // RCTNavigatorItem
     return (
       <StaticContainer key={'nav' + i} shouldUpdate={shouldUpdateChild}>
         <RCTNavigatorItem
@@ -629,6 +637,8 @@ var NavigatorIOS = React.createClass({
   },
 
   renderNavigationStackItems: function() {
+    // NavigationStack
+    // Recurse 递归
     var shouldRecurseToNavigator =
       this.state.makingNavigatorRequest ||
       this.state.updatingAllIndicesAtOrBeyond !== null;
@@ -637,6 +647,12 @@ var NavigatorIOS = React.createClass({
     var items = shouldRecurseToNavigator ?
       this.state.routeStack.map(this._routeToStackItem) : null;
 
+    // 尝试如何在Chrome中JS打印log, 或调试
+    // console.log("RouteStack");
+    // console.log(this.state.routeStack);
+    // 例如: this.state.routeStack中的内容
+    // NaviItems是如何处理的呢?
+    // {"title": "xxx", "component": xx, passProps: {}}
 
     return (
       <StaticContainer shouldUpdate={shouldRecurseToNavigator}>

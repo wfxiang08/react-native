@@ -16,7 +16,9 @@
 'use strict';
 
 var ScrollViewExample = require('./ScrollViewExample');
-
+var requireNativeComponent = require('requireNativeComponent');
+var RCTNavigatorItem = requireNativeComponent('RCTNavItem');
+var TabBarNavigator = require("./MainNavigator")
 
 var React = require('react-native');
 var {
@@ -24,12 +26,13 @@ var {
   PixelRatio,
   TouchableHighlight,
   StyleSheet,
+  ScrollView,
   TabBarIOS,
   Text,
   View,
 } = React;
 
-
+var test01 = true;
 
 var EmptyPage = React.createClass({
 
@@ -64,9 +67,18 @@ var TabBarExample = React.createClass({
 
   _renderContent: function(color: string, pageText: string, num?: number) {
     // num? 参数可有，可无，如果没有，则 {num}返回""
+  //       <RCTNavigatorItem
+  //        title={'测试' + num}
+  //        style={[
+  //          styles.stackItem,
+  //        ]}>
+  // </RCTNavigatorItem>
     return (
-      <View style={[styles.tabContent, {backgroundColor: color}]}>
-        <Text style={styles.tabText}>{pageText}</Text>
+      <ScrollView
+        automaticallyAdjustContentInsets={false}
+        style={[{backgroundColor: color}]}>
+        <View style={styles.tabContent}>
+        <Text style={styles.tabText}>开始: {pageText}</Text>
         <Text style={styles.tabText}>{num} re-renders of the {pageText}</Text>
         <Image source={require('image!btn_assistant_selected')} style={styles.imageDemo} />
         <Image source={require('image!btn_assistant_selected')} style={styles.imageDemo2} />
@@ -89,10 +101,11 @@ var TabBarExample = React.createClass({
           });
           }
         }>
-            <Text style={styles.tabText}>{pageText}</Text>
+            <Text style={styles.tabText}>结束: {pageText}</Text>
           </TouchableHighlight>
-
       </View>
+      </ScrollView>
+
     );
   },
 
@@ -108,6 +121,46 @@ var TabBarExample = React.createClass({
   // badge={this.state.notifCount > 0 ? this.state.notifCount : undefined}
   // 模拟春雨的首页
   render: function() {
+    if (test01) {
+      return (
+        <TabBarNavigator
+          navTintColor='#ff0000'
+          navBarTintColor="#f9f9f9"
+
+          translucent={false}
+          tabTintColor="#4dd363"
+          tabBarTintColor="#f9f9f9"
+
+          onChange={(index)=>console.log(`selected index ${index}`)}>
+
+
+          <TabBarNavigator.Item title='空中医院'
+                                icon={require("image!btn_air_hospital_normal")}
+                                selectedIcon={require("image!btn_air_hospital_selected")}>
+              {this._renderContent('#414A8C', '空中医院')}
+          </TabBarNavigator.Item>
+
+          <TabBarNavigator.Item title='我的服务' defaultTab
+                                icon={require('image!btn_service_normal')}
+                                selectedIcon={require('image!btn_service_selected')}>
+            {this._renderContent('#783E33', '我的服务', this.state.notifCount)}
+          </TabBarNavigator.Item>
+
+          <TabBarNavigator.Item title='健康助手'
+                                icon={require('image!btn_assistant')}
+                                selectedIcon={require('image!btn_assistant_selected')}>
+            {this._renderContent('#783E33', '健康助手', this.state.notifCount)}
+          </TabBarNavigator.Item>
+
+          <TabBarNavigator.Item title='新闻'
+                                icon={require('image!btn_news_normal')}
+                                selectedIcon={require('image!btn_news_selected')}>
+            {this._renderContent('#783E33', '新闻', this.state.notifCount)}
+          </TabBarNavigator.Item>
+        </TabBarNavigator>
+      );
+    } else {
+    }
     return (
       <TabBarIOS
         selectedTab={this.state.selectedTab}
@@ -120,11 +173,11 @@ var TabBarExample = React.createClass({
           selectedIcon={require("image!btn_air_hospital_selected")}
           selected={this.state.selectedTab === 'airTab'}
           onPress={() => {
-            // 动作之后，更新状态
-            this.setState({
-              selectedTab: 'airTab',
-            });
-          }}>
+              // 动作之后，更新状态
+              this.setState({
+                selectedTab: 'airTab',
+              });
+            }}>
           {this._renderContent('#414A8C', '空中医院')}
         </TabBarIOS.Item>
 
@@ -134,11 +187,12 @@ var TabBarExample = React.createClass({
           selectedIcon={require('image!btn_service_selected')}
           selected={this.state.selectedTab === 'serviceTab'}
           onPress={() => {
-            this.setState({
-              selectedTab: 'serviceTab',
-              notifCount: this.state.notifCount + 1,
-            });
-          }}>
+              this.setState({
+                selectedTab: 'serviceTab',
+                notifCount: this.state.notifCount + 1,
+              });
+
+            }}>
           {this._renderContent('#783E33', '我的服务', this.state.notifCount)}
         </TabBarIOS.Item>
 
@@ -148,11 +202,11 @@ var TabBarExample = React.createClass({
           selectedIcon={require('image!btn_assistant_selected')}
           selected={this.state.selectedTab === 'assitantTab'}
           onPress={() => {
-            this.setState({
-              selectedTab: 'assitantTab',
-              presses: this.state.presses + 1
-            });
-          }}>
+              this.setState({
+                selectedTab: 'assitantTab',
+                presses: this.state.presses + 1
+              });
+            }}>
           {this._renderContent('#21551C', '健康助手', this.state.presses)}
         </TabBarIOS.Item>
 
@@ -162,11 +216,11 @@ var TabBarExample = React.createClass({
           selectedIcon={require('image!btn_news_selected')}
           selected={this.state.selectedTab === 'newsTab'}
           onPress={() => {
-            this.setState({
-              selectedTab: 'newsTab',
-              presses: this.state.presses + 1
-            });
-          }}>
+              this.setState({
+                selectedTab: 'newsTab',
+                presses: this.state.presses + 1
+              });
+            }}>
           {this._renderContent('#FF551C', '新闻', this.state.presses)}
         </TabBarIOS.Item>
 
@@ -176,11 +230,11 @@ var TabBarExample = React.createClass({
           selectedIcon={require('image!btn_mine_selected')}
           selected={this.state.selectedTab === 'userTab'}
           onPress={() => {
-            this.setState({
-              selectedTab: 'userTab',
-              presses: this.state.presses + 1
-            });
-          }}>
+              this.setState({
+                selectedTab: 'userTab',
+                presses: this.state.presses + 1
+              });
+            }}>
           {this._renderContent('#FF551C', '个人中心', this.state.presses)}
         </TabBarIOS.Item>
       </TabBarIOS>
@@ -239,7 +293,17 @@ var styles = StyleSheet.create({
     borderRadius: 8,
     padding: 6,
   },
+    stackItem: {
+    backgroundColor: 'white',
+    overflow: 'hidden',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
 });
 
+TabBarExample.external = test01;
 
 module.exports = TabBarExample;

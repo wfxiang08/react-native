@@ -18,8 +18,8 @@
 #import "UIView+React.h"
 #import "RCTAutoInsetsProtocol.h"
 
-@implementation RCTWrapperViewController
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTWrapperViewController {
   UIView *_wrapperView;
   UIView *_contentView;
   RCTEventDispatcher *_eventDispatcher;
@@ -40,6 +40,8 @@
   return self;
 }
 
+// RCTNavItem居然也是一个ContentView
+// 现在内心一片混乱
 - (instancetype)initWithNavItem:(RCTNavItem *)navItem {
   if ((self = [self initWithContentView:navItem])) {
     _navItem = navItem;
@@ -58,6 +60,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _currentBottomLayoutGuide = self.bottomLayoutGuide;
 }
 
+//
+// 递归访问所有的View, 并且调用它们的: refreshContentInset
+//
 static BOOL RCTFindScrollViewAndRefreshContentInsetInView(UIView *view) {
   if ([view conformsToProtocol:@protocol(RCTAutoInsetsProtocol)]) {
     [(id <RCTAutoInsetsProtocol>) view refreshContentInset];
@@ -83,8 +88,11 @@ static BOOL RCTFindScrollViewAndRefreshContentInsetInView(UIView *view) {
   }
 }
 
-static UIView *RCTFindNavBarShadowViewInView(UIView *view)
-{
+//
+// 什么是 ShadowView 呢?
+// 没有定义，只有特征，高度为1的UIImageView
+//
+static UIView *RCTFindNavBarShadowViewInView(UIView *view) {
   if ([view isKindOfClass:[UIImageView class]] && view.bounds.size.height <= 1) {
     return view;
   }
@@ -97,21 +105,22 @@ static UIView *RCTFindNavBarShadowViewInView(UIView *view)
   return nil;
 }
 
-- (void)viewWillAppear:(BOOL)animated
-{
+- (void)viewWillAppear:(BOOL)animated {
   [super viewWillAppear:animated];
 
   // TODO: find a way to make this less-tightly coupled to navigation controller
-  if ([self.parentViewController isKindOfClass:[UINavigationController class]])
-  {
-    [self.navigationController
-     setNavigationBarHidden:_navItem.navigationBarHidden
-     animated:animated];
+  // 如果有导航栏
+  if ([self.parentViewController isKindOfClass:[UINavigationController class]]) {
+    // 如何是吸纳: _navItem到navigationController的映射呢?
+    [self.navigationController setNavigationBarHidden:_navItem.navigationBarHidden animated:animated];
 
+    // 在View将会出现的时候，修改: UINavigationBar
     UINavigationBar *bar = self.navigationController.navigationBar;
-    bar.barTintColor = _navItem.barTintColor;
-    bar.tintColor = _navItem.tintColor;
-    bar.translucent = _navItem.translucent;
+    bar.barTintColor = _navItem.barTintColor; // 背景颜色
+    bar.tintColor = _navItem.tintColor;       // 文字颜色
+    bar.translucent = _navItem.translucent;   // 是否透明
+    
+    // 修改文字颜色
     bar.titleTextAttributes = _navItem.titleTextColor ? @{
       NSForegroundColorAttributeName: _navItem.titleTextColor
     } : nil;
@@ -141,6 +150,8 @@ static UIView *RCTFindNavBarShadowViewInView(UIView *view)
   // view controller provides the desired effect. This is called after a pop
   // finishes, be it a swipe to go back or a standard tap on the back button
   [super didMoveToParentViewController:parent];
+  
+  // 找一个机会获取 navigationControllers
   if (parent == nil || [parent isKindOfClass:[UINavigationController class]]) {
     [self.navigationListener wrapperViewController:self
                      didMoveToNavigationController:(UINavigationController *)parent];

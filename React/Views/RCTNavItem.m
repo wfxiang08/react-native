@@ -15,40 +15,39 @@
 @synthesize leftButtonItem = _leftButtonItem;
 @synthesize rightButtonItem = _rightButtonItem;
 
-- (void)setBackButtonTitle:(NSString *)backButtonTitle
-{
+- (void)setBackButtonTitle:(NSString *)backButtonTitle {
   _backButtonTitle = backButtonTitle;
   _backButtonItem = nil;
 }
 
-- (void)setBackButtonIcon:(UIImage *)backButtonIcon
-{
+- (void)setBackButtonIcon:(UIImage *)backButtonIcon {
   _backButtonIcon = backButtonIcon;
   _backButtonItem = nil;
 }
 
-- (UIBarButtonItem *)backButtonItem
-{
+- (UIBarButtonItem *)backButtonItem {
   if (!_backButtonItem) {
     if (_backButtonIcon) {
+      // 注意这个地方的Image的Scale
       _backButtonItem = [[UIBarButtonItem alloc] initWithImage:_backButtonIcon
                                                          style:UIBarButtonItemStylePlain
                                                         target:nil
                                                         action:nil];
     } else if (_backButtonTitle.length) {
+      // 直接直接Title
       _backButtonItem = [[UIBarButtonItem alloc] initWithTitle:_backButtonTitle
                                                          style:UIBarButtonItemStylePlain
                                                         target:nil
                                                         action:nil];
     } else {
+      // 如果没有 icon 和 title, 则没有BackButton
       _backButtonItem = nil;
     }
   }
   return _backButtonItem;
 }
 
-- (void)setLeftButtonTitle:(NSString *)leftButtonTitle
-{
+- (void)setLeftButtonTitle:(NSString *)leftButtonTitle {
   _leftButtonTitle = leftButtonTitle;
   _leftButtonItem = nil;
 }
@@ -82,8 +81,7 @@
   return _leftButtonItem;
 }
 
-- (void)handleNavLeftButtonTapped
-{
+- (void)handleNavLeftButtonTapped {
   if (_onNavLeftButtonTap) {
     _onNavLeftButtonTap(nil);
   }

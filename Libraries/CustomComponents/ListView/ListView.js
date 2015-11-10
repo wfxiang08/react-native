@@ -108,6 +108,7 @@ var SCROLLVIEW_REF = 'listviewscroll';
 var ListView = React.createClass({
   mixins: [ScrollResponder.Mixin, TimerMixin],
 
+    // 静态变量
   statics: {
     DataSource: ListViewDataSource,
   },
@@ -116,13 +117,13 @@ var ListView = React.createClass({
    * You must provide a renderRow function. If you omit any of the other render
    * functions, ListView will simply skip rendering them.
    *
-   * - renderRow(rowData, sectionID, rowID, highlightRow);
+   * - renderRow(rowData, sectionID, rowID, highlightRow); 必须实现
    * - renderSectionHeader(sectionData, sectionID);
    */
   propTypes: {
-    ...ScrollView.propTypes,
+    ...ScrollView.propTypes, //  首先集成所有的ScrollView的属性
 
-    dataSource: PropTypes.instanceOf(ListViewDataSource).isRequired,
+    dataSource: PropTypes.instanceOf(ListViewDataSource).isRequired, // 必须有DataSource
     /**
      * (sectionID, rowID, adjacentRowHighlighted) => renderable
      * If provided, a renderable component to be rendered as the separator
@@ -254,6 +255,8 @@ var ListView = React.createClass({
 
   getInitialState: function() {
     return {
+      // 一次Render多少行数据
+      // 之前Render到什么地方了?
       curRenderedRowsCount: this.props.initialListSize,
       prevRenderedRowsCount: 0,
       highlightedRow: {},
@@ -304,11 +307,16 @@ var ListView = React.createClass({
     });
   },
 
+  // 如何处理highlight
   onRowHighlighted: function(sectionID, rowID) {
+    // highlightedRow 是一个单点状态
     this.setState({highlightedRow: {sectionID, rowID}});
   },
 
   render: function() {
+    //
+    // ListView如何Render呢?
+    //
     var bodyComponents = [];
 
     var dataSource = this.props.dataSource;
@@ -320,6 +328,7 @@ var ListView = React.createClass({
     var footer = this.props.renderFooter && this.props.renderFooter();
     var totalIndex = header ? 1 : 0;
 
+    // 遍历allRowsIDs 把没有数据的跳过
     for (var sectionIdx = 0; sectionIdx < allRowIDs.length; sectionIdx++) {
       var sectionID = dataSource.sectionIdentities[sectionIdx];
       var rowIDs = allRowIDs[sectionIdx];
@@ -327,9 +336,11 @@ var ListView = React.createClass({
         continue;
       }
 
+      // 暂不考虑SecionHeader
       if (this.props.renderSectionHeader) {
-        var shouldUpdateHeader = rowCount >= this.state.prevRenderedRowsCount &&
-          dataSource.sectionHeaderShouldUpdate(sectionIdx);
+        var shouldUpdateHeader = rowCount >= this.state.prevRenderedRowsCount && dataSource.sectionHeaderShouldUpdate(sectionIdx);
+
+        // (rowData, sectionID, rowID, highlightRow)
         bodyComponents.push(
           <StaticRenderer
             key={'s_' + sectionID}
@@ -347,23 +358,25 @@ var ListView = React.createClass({
       for (var rowIdx = 0; rowIdx < rowIDs.length; rowIdx++) {
         var rowID = rowIDs[rowIdx];
         var comboID = sectionID + rowID;
-        var shouldUpdateRow = rowCount >= this.state.prevRenderedRowsCount &&
-          dataSource.rowShouldUpdate(sectionIdx, rowIdx);
+        // renderRow: (rowData, sectionID, rowID, highlightRow)
+        // 如果rowCount 在 某个区间，则shouldUpdate 设置为True, 但是会生成: bodyComponents
+        var shouldUpdateRow = rowCount >= this.state.prevRenderedRowsCount && dataSource.rowShouldUpdate(sectionIdx, rowIdx);
         var row =
           <StaticRenderer
             key={'r_' + comboID}
             shouldUpdate={!!shouldUpdateRow}
             render={this.props.renderRow.bind(
-              null,
-              dataSource.getRowData(sectionIdx, rowIdx),
-              sectionID,
-              rowID,
-              this.onRowHighlighted
+              null,                                       // this之类的context, 直接跳过
+              dataSource.getRowData(sectionIdx, rowIdx),  // rowData
+              sectionID,                                  // sectionID
+              rowID,                                      // rowID
+              this.onRowHighlighted                       // highlightRow
             )}
           />;
         bodyComponents.push(row);
         totalIndex++;
 
+        // 暂不考虑: renderSeparator
         if (this.props.renderSeparator &&
             (rowIdx !== rowIDs.length - 1 || sectionIdx === allRowIDs.length - 1)) {
           var adjacentRowHighlighted =
@@ -379,19 +392,25 @@ var ListView = React.createClass({
           bodyComponents.push(separator);
           totalIndex++;
         }
+        // break两层循环-A
         if (++rowCount === this.state.curRenderedRowsCount) {
           break;
         }
       }
+
+      // break两层循环-B
       if (rowCount >= this.state.curRenderedRowsCount) {
         break;
       }
     }
 
+    // 得到: bodyComponents 之后如何处理呢?
     var {
       renderScrollComponent,
       ...props,
     } = this.props;
+
+    // 将this.props进行destruct
     if (!props.scrollEventThrottle) {
       props.scrollEventThrottle = DEFAULT_SCROLL_CALLBACK_THROTTLE;
     }
