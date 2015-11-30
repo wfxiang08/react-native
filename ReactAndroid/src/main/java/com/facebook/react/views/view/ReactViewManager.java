@@ -56,6 +56,8 @@ public class ReactViewManager extends ViewGroupManager<ReactViewGroup> {
 
   @ReactProp(name = "borderRadius")
   public void setBorderRadius(ReactViewGroup view, float borderRadius) {
+    // 在代码内部，我们期望使用Pixel
+    // 但是实际布局的时候，我们可能使用???
     view.setBorderRadius(PixelUtil.toPixelFromDIP(borderRadius));
   }
 

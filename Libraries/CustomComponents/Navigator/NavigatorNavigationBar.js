@@ -166,6 +166,7 @@ var NavigatorNavigationBar = React.createClass({
       );
     }, this);
 
+    // 注意: Bar的样式
     return (
       <View style={[styles.navBarContainer, navBarStyle, this.props.style]}>
         {components}

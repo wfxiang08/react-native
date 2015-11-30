@@ -68,6 +68,7 @@ public class ReactSwitchManager extends SimpleViewManager<ReactSwitch> {
       new CompoundButton.OnCheckedChangeListener() {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+          // 将Event发送出去
           ReactContext reactContext = (ReactContext) buttonView.getContext();
           reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(
               new ReactSwitchEvent(
@@ -99,6 +100,7 @@ public class ReactSwitchManager extends SimpleViewManager<ReactSwitch> {
     return view;
   }
 
+  // 似乎所有的Prop 只接受来自外部的输入， 反馈回去
   @ReactProp(name = ViewProps.ENABLED, defaultBoolean = true)
   public void setEnabled(ReactSwitch view, boolean enabled) {
     view.setEnabled(enabled);

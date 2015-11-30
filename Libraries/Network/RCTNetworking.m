@@ -195,11 +195,17 @@ RCT_EXPORT_MODULE()
                                  completionBlock:(void (^)(NSURLRequest *request))block
 {
   NSURL *URL = [RCTConvert NSURL:query[@"url"]]; // this is marked as nullable in JS, but should not be null
+
+  // 1. 构建Request
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
   request.HTTPMethod = [RCTConvert NSString:RCTNilIfNull(query[@"method"])].uppercaseString ?: @"GET";
+  
+  // 2. Http Headers
   request.allHTTPHeaderFields = [RCTConvert NSDictionary:query[@"headers"]];
 
+  // 3. Data
   NSDictionary *data = [RCTConvert NSDictionary:RCTNilIfNull(query[@"data"])];
+  
   return [self processDataForHTTPQuery:data callback:^(NSError *error, NSDictionary *result) {
     if (error) {
       RCTLogError(@"Error processing request body: %@", error);
@@ -413,14 +419,15 @@ RCT_EXPORT_MODULE()
 #pragma mark - JS API
 
 RCT_EXPORT_METHOD(sendRequest:(NSDictionary *)query
-                  responseSender:(RCTResponseSenderBlock)responseSender)
-{
+                  responseSender:(RCTResponseSenderBlock)responseSender) {
   // TODO: buildRequest returns a cancellation block, but there's currently
   // no way to invoke it, if, for example the request is cancelled while
   // loading a large file to build the request body
   [self buildRequest:query completionBlock:^(NSURLRequest *request) {
 
     BOOL incrementalUpdates = [RCTConvert BOOL:query[@"incrementalUpdates"]];
+    
+    // 如何发送Request呢?
     [self sendRequest:request
    incrementalUpdates:incrementalUpdates
        responseSender:responseSender];

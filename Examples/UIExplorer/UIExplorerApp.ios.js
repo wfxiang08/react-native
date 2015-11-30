@@ -16,7 +16,12 @@
  */
 'use strict';
 
+var data={
+  "message": "Hello"
+}
+
 var React = require('react-native');
+
 var UIExplorerList = require('./UIExplorerList.ios');
 
 var TabBarExample = require("./TabBarIOSExample")
@@ -57,9 +62,9 @@ var UIExplorerApp = React.createClass({
       <NavigatorIOS
         style={styles.container}
         initialRoute={{
-          title: '春雨医生',
+          title: '春雨医生改进版',
           component: UIExplorerList,
-          // component: TabBarExample,
+          //component: TabBarExample,
           passProps: {
             onExternalExampleRequested: (example) => {
               this.setState({ openExternalExample: example, });

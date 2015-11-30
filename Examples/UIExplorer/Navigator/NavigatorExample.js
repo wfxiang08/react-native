@@ -43,6 +43,7 @@ class NavButton extends React.Component {
 
 class NavMenu extends React.Component {
   render() {
+    // 需要知道自己工作的场景，然后决定如何展示
     return (
       <ScrollView style={styles.scene}>
         <Text style={styles.messageText}>NavigatorExample: {this.props.message}</Text>

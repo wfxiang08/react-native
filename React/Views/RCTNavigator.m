@@ -292,6 +292,10 @@ NSInteger kNeverProgressed = -10000;
   RCTAssertParam(bridge);
 
   if ((self = [super initWithFrame:CGRectZero])) {
+    self.layer.borderColor = [UIColor colorWithRed:1.0 green:0 blue:0 alpha:1];
+    self.layer.borderWidth = 2;
+    
+    
     _paused = YES;
 
     _bridge = bridge;
@@ -302,6 +306,9 @@ NSInteger kNeverProgressed = -10000;
     _previousViews = @[];
     _currentViews = [[NSMutableArray alloc] initWithCapacity:0]; // RCTNavItem
     
+    
+    // 创建一个: RCTNavigationController, 然后呢?
+    // RCTNavigationController.view 添加到当前的View, 也就是: RCTNavigator中，自己维护NavigationBar
     __weak RCTNavigator *weakSelf = self;
     _navigationController = [[RCTNavigationController alloc] initWithScrollCallback:^{
       [weakSelf dispatchFakeScrollEvent];
@@ -313,7 +320,8 @@ NSInteger kNeverProgressed = -10000;
     // 自己带有: NavigationController
     [self addSubview:_navigationController.view];
     
-    // DummyView的作用?
+    // DummyView的作用
+    // 用于动画中控制进度
     [_navigationController.view addSubview:_dummyView];
   }
   return self;
@@ -460,6 +468,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 - (void)layoutSubviews {
   [super layoutSubviews];
   
+  //
+  // _navigationController: 双重管理
+  // view 添加到self中
+  // controller整天添加到上一层的Controller中
+  //
   [self reactAddControllerToClosestParent:_navigationController];
   _navigationController.view.frame = self.bounds;
 }
@@ -497,19 +510,28 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   return self.superview ? self.superview : self.reactNavSuperviewLink;
 }
 
+//
+// 什么时候调用? 背后的逻辑?
+//
 - (void)reactBridgeDidFinishTransaction {
   // we can't hook up the VC hierarchy in 'init' because the subviews aren't
   // hooked up yet, so we do it on demand here
   [self reactAddControllerToClosestParent:_navigationController];
 
   NSUInteger viewControllerCount = _navigationController.viewControllers.count;
+
   // The "react count" is the count of views that are visible on the navigation
   // stack.  There may be more beyond this - that aren't visible, and may be
   // deleted/purged soon.
-  NSUInteger previousReactCount =
-    _previousRequestedTopOfStack == kNeverRequested ? 0 : _previousRequestedTopOfStack + 1;
+  NSUInteger previousReactCount = _previousRequestedTopOfStack == kNeverRequested ? 0 : _previousRequestedTopOfStack + 1;
   NSUInteger currentReactCount = _requestedTopOfStack + 1;
 
+  
+  // 注意几个变量的意义:
+  // viewControllerCount
+  // previousReactCount
+  // currentReactCount
+  //
   BOOL jsGettingAhead =
     //    ----- previously caught up ------          ------ no longer caught up -------
     viewControllerCount == previousReactCount && currentReactCount != viewControllerCount;
@@ -523,9 +545,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     //    --- previously caught up --------          ------- still caught up ----------
     viewControllerCount == previousReactCount && currentReactCount == previousReactCount;
 
-BOOL jsGettingtooSlow =
-  //    --- previously not caught up --------          ------- no longer caught up ----------
-  viewControllerCount < previousReactCount && currentReactCount < previousReactCount;
+  BOOL jsGettingtooSlow =
+    //    --- previously not caught up --------          ------- no longer caught up ----------
+    viewControllerCount < previousReactCount && currentReactCount < previousReactCount;
 
   BOOL reactPushOne = jsGettingAhead && currentReactCount == previousReactCount + 1;
   BOOL reactPopN = jsGettingAhead && currentReactCount < previousReactCount;
@@ -555,15 +577,24 @@ BOOL jsGettingtooSlow =
   if (currentReactCount < 1) {
     RCTLogError(@"should be at least one current view");
   }
+  
+  
   if (jsGettingAhead) {
     if (reactPushOne) {
+      // 获取最新的NaviItem
       UIView *lastView = _currentViews.lastObject;
       RCTWrapperViewController *vc = [[RCTWrapperViewController alloc] initWithNavItem:(RCTNavItem *)lastView];
       vc.navigationListener = self;
+      
       _numberOfViewControllerMovesToIgnore = 1;
+      
+      // 在当前的NavigationController中添加一个新的 RCTWrapperViewController
+      //
       [_navigationController pushViewController:vc animated:(currentReactCount > 1)];
     } else if (reactPopN) {
+      // JS超前了，现在需要弹出
       UIViewController *viewControllerToPopTo = _navigationController.viewControllers[(currentReactCount - 1)];
+
       _numberOfViewControllerMovesToIgnore = viewControllerCount - currentReactCount;
       [_navigationController popToViewController:viewControllerToPopTo animated:YES];
     } else {

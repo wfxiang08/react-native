@@ -89,16 +89,16 @@ var TabBarExample = React.createClass({
           //this.props.navigator.push({
           //    message: 'Came from jumping example',
           //  });
-
-          this.props.navigator.push({
-            message: "测试",
-            component: EmptyPage,
-            rightButtonTitle: '取消',
-            onRightButtonPress: () => this.props.navigator.pop(),
-            passProps: {
-              text: 'This page has a right button in the nav bar',
-            }
-          });
+          this.props.onExampleExit();
+          //this.props.navigator.push({
+          //  message: "测试",
+          //  component: EmptyPage,
+          //  rightButtonTitle: '取消',
+          //  onRightButtonPress: () => this.props.navigator.pop(),
+          //  passProps: {
+          //    text: 'This page has a right button in the nav bar',
+          //  }
+          //});
           }
         }>
             <Text style={styles.tabText}>结束: {pageText}</Text>

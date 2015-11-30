@@ -16,6 +16,8 @@
 
 @protocol UIScrollViewDelegate;
 
+//----------------------------------------------------------------------------------------------------------------------
+// ScrollView 如何自己实现呢?
 @interface RCTScrollView : RCTView <UIScrollViewDelegate, RCTScrollableProtocol, RCTAutoInsetsProtocol>
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher NS_DESIGNATED_INITIALIZER;
@@ -50,6 +52,7 @@
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @interface RCTEventDispatcher (RCTScrollView)
 
 /**

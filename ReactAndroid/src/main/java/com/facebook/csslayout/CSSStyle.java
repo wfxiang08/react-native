@@ -35,6 +35,8 @@ public class CSSStyle {
   public float[] position = new float[4];
   public float[] dimensions = new float[2];
 
+
+  // 这个怎么设置? 如何作用呢?
   public float minWidth = CSSConstants.UNDEFINED;
   public float minHeight = CSSConstants.UNDEFINED;
 

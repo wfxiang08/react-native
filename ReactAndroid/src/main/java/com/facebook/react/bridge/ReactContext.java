@@ -231,6 +231,10 @@ public class ReactContext extends ContextWrapper {
    */
   public void startActivityForResult(Intent intent, int code, Bundle bundle) {
     Assertions.assertNotNull(mCurrentActivity);
+
+    // 所有的操作都是基于当前的Activity
+    // 如何打开一个新的Activity呢?
+    //
     mCurrentActivity.startActivityForResult(intent, code, bundle);
   }
 }

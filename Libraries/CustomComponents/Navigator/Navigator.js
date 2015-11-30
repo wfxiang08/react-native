@@ -36,11 +36,14 @@ var NavigatorBreadcrumbNavigationBar = require('NavigatorBreadcrumbNavigationBar
 var NavigatorNavigationBar = require('NavigatorNavigationBar');
 var NavigatorSceneConfigs = require('NavigatorSceneConfigs');
 var PanResponder = require('PanResponder');
+
+
 var React = require('React');
 var StyleSheet = require('StyleSheet');
 var Subscribable = require('Subscribable');
 var TimerMixin = require('react-timer-mixin');
 var View = require('View');
+
 
 var clamp = require('clamp');
 var flattenStyle = require('flattenStyle');
@@ -85,7 +88,7 @@ function getRouteID(route) {
       value: getuid(),
     });
   }
-  return route[key];
+  return route[key]; // 返回value?
 }
 
 // styles moved to the top of the file so getDefaultProps can refer to it
@@ -109,6 +112,7 @@ var styles = StyleSheet.create({
     bottom: 0,
     top: 0,
   },
+  // Scene如何失效呢?
   disabledScene: {
     top: SCREEN_HEIGHT,
     bottom: -SCREEN_HEIGHT,
@@ -166,6 +170,9 @@ var GESTURE_ACTIONS = [
  *
  * If you have a ref to the Navigator element, you can invoke several methods
  * on it to trigger navigation:
+ *
+ *  1. jumpXX 会保持 stack不变
+ *  2. pop/push 会改变 stack
  *
  *  - `getCurrentRoutes()` - returns the current list of routes
  *  - `jumpBack()` - Jump backward without unmounting the current scene
@@ -271,7 +278,9 @@ var Navigator = React.createClass({
 
   getDefaultProps: function() {
     return {
+      // 默认的Scene Config, 主要是页面切换的动作
       configureScene: () => NavigatorSceneConfigs.PushFromRight,
+      // 样式?
       sceneStyle: styles.defaultSceneStyle,
     };
   },
@@ -281,11 +290,18 @@ var Navigator = React.createClass({
 
     this._renderedSceneMap = new Map();
 
+    // routeStack 表示当前的 Navigator的stack，记录了所有的 routes的信息
     var routeStack = this.props.initialRouteStack || [this.props.initialRoute];
+
     invariant(
       routeStack.length >= 1,
       'Navigator requires props.initialRoute or props.initialRouteStack.'
     );
+
+
+    // initialRouteIndex: 这是如何理解呢?
+    // 如果: initialRouteIndex == 0, 这个OK
+    //      initialRouteIndex > 0, 一开始只展示最新的ViewController
     var initialRouteIndex = routeStack.length - 1;
     if (this.props.initialRoute) {
       initialRouteIndex = routeStack.indexOf(this.props.initialRoute);
@@ -294,12 +310,20 @@ var Navigator = React.createClass({
         'initialRoute is not in initialRouteStack.'
       );
     }
+
+
     return {
+      // 1. 每个route对应一个sceneConfig
       sceneConfigStack: routeStack.map(
         (route) => this.props.configureScene(route)
       ),
+      // 2. routeStack
       routeStack,
+
+      // 3. 当前展示的Index
       presentedIndex: initialRouteIndex,
+
+      // 4. 其他的中间状态
       transitionFromIndex: null,
       activeGesture: null,
       pendingGestureProgress: null,
@@ -312,8 +336,12 @@ var Navigator = React.createClass({
     this.__defineGetter__('navigationContext', this._getNavigationContext);
 
     this._subRouteFocus = [];
+
+    // 这个作用?
     this.parentNavigator = this.props.navigator;
     this._handlers = {};
+
+    // 动画
     this.springSystem = new rebound.SpringSystem();
     this.spring = this.springSystem.createSpring();
     this.spring.setRestSpeedThreshold(0.05);
@@ -331,6 +359,8 @@ var Navigator = React.createClass({
         this._completeTransition();
       },
     });
+
+    // 滑动动画
     this.panGesture = PanResponder.create({
       onMoveShouldSetPanResponder: this._handleMoveShouldSetPanResponder,
       onPanResponderGrant: this._handlePanResponderGrant,
@@ -338,6 +368,8 @@ var Navigator = React.createClass({
       onPanResponderMove: this._handlePanResponderMove,
       onPanResponderTerminate: this._handlePanResponderTerminate,
     });
+
+    // 展示对应的route?
     this._interactionHandle = null;
     this._emitWillFocus(this.state.routeStack[this.state.presentedIndex]);
   },
@@ -363,7 +395,10 @@ var Navigator = React.createClass({
    * items.
    */
   immediatelyResetRouteStack: function(nextRouteStack) {
+    // 重新设置: routeStack以及相关的状态
     var destIndex = nextRouteStack.length - 1;
+
+    // ....
     this.setState({
       routeStack: nextRouteStack,
       sceneConfigStack: nextRouteStack.map(
@@ -374,11 +409,15 @@ var Navigator = React.createClass({
       transitionFromIndex: null,
       transitionQueue: [],
     }, () => {
+      // 什么时候调用呢?
       this._handleSpringUpdate();
     });
   },
 
   _transitionTo: function(destIndex, velocity, jumpSpringTo, cb) {
+    //
+    // velocity, jumpSpringTo, cb 可以为 null
+    //
     // 如何切换到指定的 destIndex呢?
     if (destIndex === this.state.presentedIndex) {
       return;
@@ -393,15 +432,17 @@ var Navigator = React.createClass({
       });
       return;
     }
+
+    // 准备切换(state改变了，相关的动作也会触发)
     this.state.transitionFromIndex = this.state.presentedIndex;
     this.state.presentedIndex = destIndex;
     this.state.transitionCb = cb;
+
     this._onAnimationStart();
     if (AnimationsDebugModule) {
       AnimationsDebugModule.startRecordingFps();
     }
-    var sceneConfig = this.state.sceneConfigStack[this.state.transitionFromIndex] ||
-      this.state.sceneConfigStack[this.state.presentedIndex];
+    var sceneConfig = this.state.sceneConfigStack[this.state.transitionFromIndex] || this.state.sceneConfigStack[this.state.presentedIndex];
     invariant(
       sceneConfig,
       'Cannot configure scene at index ' + this.state.transitionFromIndex
@@ -860,6 +901,7 @@ var Navigator = React.createClass({
   },
 
   _getDestIndexWithinBounds: function(n) {
+    // 给定跳转的step, 然后获取destIndex, 并且验证是否OK
     var currentIndex = this.state.presentedIndex;
     var destIndex = currentIndex + n;
     invariant(
@@ -876,17 +918,22 @@ var Navigator = React.createClass({
 
   _jumpN: function(n) {
     var destIndex = this._getDestIndexWithinBounds(n);
+
+    // 三个步骤
+    // jumpN 似乎会保持 routeStack不变，push会改变routeStack
     this._enableScene(destIndex);
     this._emitWillFocus(this.state.routeStack[destIndex]);
     this._transitionTo(destIndex);
   },
 
   jumpTo: function(route) {
+    // route应该包含哪些信息呢?
     var destIndex = this.state.routeStack.indexOf(route);
     invariant(
       destIndex !== -1,
       'Cannot jump to route that is not in the route stack'
     );
+
     this._jumpN(destIndex - this.state.presentedIndex);
   },
 
@@ -907,14 +954,18 @@ var Navigator = React.createClass({
     var activeStack = this.state.routeStack.slice(0, activeLength);
 
     var activeAnimationConfigStack = this.state.sceneConfigStack.slice(0, activeLength);
+
+    // 更新stack
     var nextStack = activeStack.concat([route]);
     var destIndex = nextStack.length - 1;
+
+    // 获取config的stack
     var nextAnimationConfigStack = activeAnimationConfigStack.concat([
       this.props.configureScene(route),
     ]);
 
+    // 如何更新Scene呢?
     this._emitWillFocus(nextStack[destIndex]);
-
     this.setState({
       routeStack: nextStack,
       sceneConfigStack: nextAnimationConfigStack,
@@ -969,22 +1020,31 @@ var Navigator = React.createClass({
    */
   replaceAtIndex: function(route, index, cb) {
     invariant(!!route, 'Must supply route to replace');
+
+    // 1. 下标的处理
     if (index < 0) {
       index += this.state.routeStack.length;
     }
 
+    // 2. 验证 index的有效性
     if (this.state.routeStack.length <= index) {
       return;
     }
 
+    // 3. slice（拷贝数据)
     var nextRouteStack = this.state.routeStack.slice();
     var nextAnimationModeStack = this.state.sceneConfigStack.slice();
+
+    // 4. 更新数据
     nextRouteStack[index] = route;
     nextAnimationModeStack[index] = this.props.configureScene(route);
 
+    // 如果当前的route被替换，则需要处理Focus相关的动作
     if (index === this.state.presentedIndex) {
       this._emitWillFocus(route);
     }
+
+    // 5.更新Stack
     this.setState({
       routeStack: nextRouteStack,
       sceneConfigStack: nextAnimationModeStack,
@@ -992,6 +1052,7 @@ var Navigator = React.createClass({
       if (index === this.state.presentedIndex) {
         this._emitDidFocus(route);
       }
+      // 6. 执行callback
       cb && cb();
     });
   },
@@ -1060,12 +1121,18 @@ var Navigator = React.createClass({
   },
 
   _renderScene: function(route, i) {
+
     var disabledSceneStyle = null;
     var disabledScenePointerEvents = 'auto';
     if (i !== this.state.presentedIndex) {
       disabledSceneStyle = styles.disabledScene;
       disabledScenePointerEvents = 'none';
     }
+
+
+    // 将renderScene中的结果Render成为一个View
+    // 如果View内部有导航栏，则会新开一个navigator
+    // 全屏,
     return (
       <View
         key={'scene_' + getRouteID(route)}
@@ -1075,7 +1142,8 @@ var Navigator = React.createClass({
         }}
         pointerEvents={disabledScenePointerEvents}
         style={[styles.baseScene, this.props.sceneStyle, disabledSceneStyle]}>
-        {this.props.renderScene(
+        {
+          this.props.renderScene(
           route,
           this
         )}
@@ -1090,6 +1158,8 @@ var Navigator = React.createClass({
     if (!this.props.navigationBar) {
       return null;
     }
+
+    // NavigationBar
     return React.cloneElement(this.props.navigationBar, {
       ref: (navBar) => { this._navBar = navBar; },
       navigator: this._navigationBarNavigator,
@@ -1098,11 +1168,14 @@ var Navigator = React.createClass({
   },
 
   render: function() {
+    // 导航栏如何Render呢?
     var newRenderedSceneMap = new Map();
+
+    // 所有场景都在: Navigator 上，Virtual DOM(没有变化的就不会有什么问题)
     var scenes = this.state.routeStack.map((route, index) => {
       var renderedScene;
-      if (this._renderedSceneMap.has(route) &&
-          index !== this.state.presentedIndex) {
+      //
+      if (this._renderedSceneMap.has(route) && index !== this.state.presentedIndex) {
         renderedScene = this._renderedSceneMap.get(route);
       } else {
         renderedScene = this._renderScene(route, index);
@@ -1110,19 +1183,31 @@ var Navigator = React.createClass({
       newRenderedSceneMap.set(route, renderedScene);
       return renderedScene;
     });
+
     this._renderedSceneMap = newRenderedSceneMap;
+
+
+    // State变化之后，render会被重复调用
+    // transitioner:
+    // 布局:
+    // 1. 首先: Navigator 占据全屏
+    // 2. 内部包含各种scenes, 只有当前active的scenes才是有效的
+    // 3.
+    // View样式: flex:1, overflow:hidden
     return (
       <View style={[styles.container, this.props.style]}>
-        <View
-          style={styles.transitioner}
+
+        <View style={styles.transitioner}
           {...this.panGesture.panHandlers}
           onTouchStart={this._handleTouchStart}
-          onResponderTerminationRequest={
-            this._handleResponderTerminationRequest
-          }>
+          onResponderTerminationRequest={this._handleResponderTerminationRequest}>
           {scenes}
         </View>
-        {this._renderNavigationBar()}
+
+        {
+          // 导航栏(位置: top:0, left:0,right:0, height:xxx
+          this._renderNavigationBar()
+        }
       </View>
     );
   },

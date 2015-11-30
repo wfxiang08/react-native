@@ -144,7 +144,7 @@ exports.examples = [
             style={[
               styles.base,
               styles.background,
-              {borderWidth: 3, borderColor: '#f099f0'}
+              {borderWidth: 3, borderColor: '#fed2da'}
             ]}
           />
         </View>

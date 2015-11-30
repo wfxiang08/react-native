@@ -29,7 +29,7 @@ import com.facebook.react.uimanager.events.NativeGestureUtil;
  * views to custom {@link PagerAdapter} instance which is used by {@link NativeViewHierarchyManager}
  * to add children nodes according to react views hierarchy.
  */
-/* package */ class ReactViewPager extends ViewPager {
+class ReactViewPager extends ViewPager {
 
   private class Adapter extends PagerAdapter {
 
@@ -54,15 +54,18 @@ import com.facebook.react.uimanager.events.NativeGestureUtil;
       return mViews.size();
     }
 
+    // ViewPager就像一个TableView/Listview
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
       View view = mViews.get(position);
+      // 默认的View是FillContent/FillContent
       container.addView(view, 0, generateDefaultLayoutParams());
       return view;
     }
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
+      // ??? 什么时候DestoryItem呢?
       View view = mViews.get(position);
       container.removeView(view);
     }
@@ -77,12 +80,17 @@ import com.facebook.react.uimanager.events.NativeGestureUtil;
 
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+      // PageScrolled 滑动到什么地方了?
+      // Scroll导致的变化，肯定不是JS做的
       mEventDispatcher.dispatchEvent(
           new PageScrollEvent(getId(), SystemClock.uptimeMillis(), position, positionOffset));
     }
 
     @Override
     public void onPageSelected(int position) {
+      // 哪个元素被选中了
+      // PageSelected 存在两种情况:
+      // Java代码直接操作，通过Js设置selectedPage, 如果是后者，则不需要再次通知JS(否则形成死循环)
       if (!mIsCurrentItemFromJs) {
         mEventDispatcher.dispatchEvent(
             new PageSelectedEvent(getId(), SystemClock.uptimeMillis(), position));
@@ -100,31 +108,43 @@ import com.facebook.react.uimanager.events.NativeGestureUtil;
 
   public ReactViewPager(ReactContext reactContext) {
     super(reactContext);
+    // 获取EventDispatcher
+    // 自定义的ReactContext的设计原则?
+    //
     mEventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
     mIsCurrentItemFromJs = false;
+
+    // 使用自定义的控件
     setOnPageChangeListener(new PageChangeListener());
     setAdapter(new Adapter());
   }
 
+  // ViewPager 如何扩展呢?
+  // Adapter
+  // onInterceptTouchEvent 等
+  //
   @Override
   public Adapter getAdapter() {
+    // 类型转换
+    // 被Override的方法的返回值类型可以稍微不一样
     return (Adapter) super.getAdapter();
   }
 
   @Override
   public boolean onInterceptTouchEvent(MotionEvent ev) {
     if (super.onInterceptTouchEvent(ev)) {
+      // 截获Event之后，再通知JS端
       NativeGestureUtil.notifyNativeGestureStarted(this, ev);
       return true;
     }
     return false;
   }
 
-  /* package */ void addViewToAdapter(View child, int index) {
+  void addViewToAdapter(View child, int index) {
     getAdapter().addView(child, index);
   }
 
-  /* package */ void setCurrentItemFromJs(int item) {
+  void setCurrentItemFromJs(int item) {
     mIsCurrentItemFromJs = true;
     setCurrentItem(item);
     mIsCurrentItemFromJs = false;

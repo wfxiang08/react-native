@@ -35,12 +35,14 @@ public class ReactViewPagerManager extends ViewGroupManager<ReactViewPager> {
     return new ReactViewPager(reactContext);
   }
 
+  // 如何导出属性?
   @ReactProp(name = "selectedPage")
   public void setSelectedPage(ReactViewPager view, int page) {
     // TODO(8496821): Handle selectedPage property cleanup correctly, now defaults to 0
     view.setCurrentItemFromJs(page);
   }
 
+  // 自己对Children进行Layout
   @Override
   public boolean needsCustomLayoutForChildren() {
     return true;

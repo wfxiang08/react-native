@@ -31,8 +31,8 @@ CGFloat const ZINDEX_STICKY_HEADER = 50;
 
 @end
 
-@implementation RCTScrollEvent
-{
+//----------------------------------------------------------------------------------------------------------------------
+@implementation RCTScrollEvent {
   RCTScrollEventType _type;
   UIScrollView *_scrollView;
   NSDictionary *_userData;
@@ -115,10 +115,13 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   return YES;
 }
 
-- (RCTScrollEvent *)coalesceWithEvent:(RCTScrollEvent *)newEvent
-{
+//
+// 如何和已有的Event合并呢?
+//
+- (RCTScrollEvent *)coalesceWithEvent:(RCTScrollEvent *)newEvent {
   NSArray *updatedChildFrames = [_userData[@"updatedChildFrames"] arrayByAddingObjectsFromArray:newEvent->_userData[@"updatedChildFrames"]];
 
+  // 重新构建: _userData
   if (updatedChildFrames) {
     NSMutableDictionary *userData = [newEvent->_userData mutableCopy];
     userData[@"updatedChildFrames"] = updatedChildFrames;
@@ -135,6 +138,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 /**
  * Include a custom scroll view subclass because we want to limit certain
  * default UIKit behaviors such as textFields automatically scrolling
@@ -354,6 +358,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 @end
 
+//----------------------------------------------------------------------------------------------------------------------
 @implementation RCTScrollView
 {
   RCTEventDispatcher *_eventDispatcher;
@@ -367,15 +372,17 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 @synthesize nativeMainScrollDelegate = _nativeMainScrollDelegate;
 
-- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
-{
+- (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher {
   RCTAssertParam(eventDispatcher);
 
   if ((self = [super initWithFrame:CGRectZero])) {
     _eventDispatcher = eventDispatcher;
+    
+    // 内部实现, 尽可能利用已有的实现
     _scrollView = [[RCTCustomScrollView alloc] initWithFrame:CGRectZero];
     _scrollView.delegate = self;
     _scrollView.delaysContentTouches = NO;
+    
     _automaticallyAdjustContentInsets = YES;
     _contentInset = UIEdgeInsetsZero;
     _contentSize = CGSizeZero;
@@ -393,42 +400,39 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (void)setRemoveClippedSubviews:(__unused BOOL)removeClippedSubviews
-{
+- (void)setRemoveClippedSubviews:(__unused BOOL)removeClippedSubviews {
   // Does nothing
 }
 
-- (void)insertReactSubview:(UIView *)view atIndex:(__unused NSInteger)atIndex
-{
+
+//
+// 只能有一个ContentView
+//
+- (void)insertReactSubview:(UIView *)view atIndex:(__unused NSInteger)atIndex {
   RCTAssert(_contentView == nil, @"RCTScrollView may only contain a single subview");
   _contentView = view;
   [_scrollView addSubview:view];
 }
 
-- (void)removeReactSubview:(UIView *)subview
-{
+- (void)removeReactSubview:(UIView *)subview {
   RCTAssert(_contentView == subview, @"Attempted to remove non-existent subview");
   _contentView = nil;
   [subview removeFromSuperview];
 }
 
-- (NSArray *)reactSubviews
-{
+- (NSArray *)reactSubviews {
   return _contentView ? @[_contentView] : @[];
 }
 
-- (BOOL)centerContent
-{
+- (BOOL)centerContent {
   return _scrollView.centerContent;
 }
 
-- (void)setCenterContent:(BOOL)centerContent
-{
+- (void)setCenterContent:(BOOL)centerContent {
   _scrollView.centerContent = centerContent;
 }
 
-- (NSIndexSet *)stickyHeaderIndices
-{
+- (NSIndexSet *)stickyHeaderIndices {
   return _scrollView.stickyHeaderIndices;
 }
 
@@ -502,13 +506,15 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _scrollView.contentOffset = contentOffset;
 }
 
-- (void)scrollToOffset:(CGPoint)offset
-{
+- (void)scrollToOffset:(CGPoint)offset {
   [self scrollToOffset:offset animated:YES];
 }
 
-- (void)scrollToOffset:(CGPoint)offset animated:(BOOL)animated
-{
+
+//
+// Delegate to _scrollView
+//
+- (void)scrollToOffset:(CGPoint)offset animated:(BOOL)animated {
   if (!CGPointEqualToPoint(_scrollView.contentOffset, offset)) {
     [_scrollView setContentOffset:offset animated:animated];
   }

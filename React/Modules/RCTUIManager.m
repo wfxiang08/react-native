@@ -894,8 +894,7 @@ RCT_EXPORT_METHOD(findSubviewIn:(nonnull NSNumber *)reactTag atPoint:(CGPoint)po
   }];
 }
 
-- (void)batchDidComplete
-{
+- (void)batchDidComplete {
   RCTProfileBeginEvent(0, @"[RCTUIManager batchDidComplete]", nil);
 
   // Gather blocks to be executed now that all view hierarchy manipulations have
@@ -934,11 +933,11 @@ RCT_EXPORT_METHOD(findSubviewIn:(nonnull NSNumber *)reactTag atPoint:(CGPoint)po
   [self flushUIBlocks];
 }
 
-- (void)flushUIBlocks
-{
+- (void)flushUIBlocks {
   // First copy the previous blocks into a temporary variable, then reset the
   // pending blocks to a new array. This guards against mutation while
   // processing the pending blocks in another thread.
+  // 1. 首先读取所有的PendingUIBlocks
   [_pendingUIBlocksLock lock];
   NSArray *previousPendingUIBlocks = _pendingUIBlocks;
   _pendingUIBlocks = [NSMutableArray new];
@@ -951,12 +950,14 @@ RCT_EXPORT_METHOD(findSubviewIn:(nonnull NSNumber *)reactTag atPoint:(CGPoint)po
       RCTProfileEndFlowEvent();
       RCTProfileBeginEvent(0, @"UIManager flushUIBlocks", nil);
       @try {
+        // 2. 批量执行所有的UIBlocks
         for (dispatch_block_t block in previousPendingUIBlocks) {
           block();
         }
         /**
          * TODO(tadeu): Remove it once and for all
          */
+        // 3. 执行完毕所有的，然后再回调: Transaction
         for (id<RCTComponent> node in _bridgeTransactionListeners) {
           [node reactBridgeDidFinishTransaction];
         }
